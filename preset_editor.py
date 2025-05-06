@@ -36,8 +36,8 @@ class PresetEditor(tk.Toplevel):
         if self.preset_type == "File":
             fields.append(("partialsheet", "Partial Sheet Selection"))
         elif self.preset_type == "Text":
-            fields.insert(2, ("logic", "Logic"))  # Insert after labeltemplatepath
-            # Remove "inputtype" and "copiesperlabel" from Text
+            fields.insert(2, ("logic", "Logic")) 
+   
             fields = [f for f in fields if f[0] not in ("inputtype", "copiesperlabel")]
 
         row_counter = 0
@@ -73,7 +73,20 @@ class PresetEditor(tk.Toplevel):
                 cb = ttk.Combobox(self, values=["Identical", "Serial"], state="readonly")
                 cb.set(self.preset_data.get(key, "Identical"))
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.bind("<<ComboboxSelected>>", self.toggle_labels_per_serial)
                 self.entries[key] = cb
+
+                # Setup Labels Per Serial widgets
+                self.labels_per_serial_row = row_counter + 1
+                self.labels_per_serial_label = tk.Label(self, text="Labels Per Serial")
+                self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
+                self.labels_per_serial_dropdown.set(str(self.preset_data.get("labels_perserial", "1")))
+
+                if cb.get() == "Serial":
+                    self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
+                    self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
+
+                row_counter += 2  # use 2 rows if Serial is selected, otherwise will be handled dynamically
 
             elif key == "inputtype":
                 cb = ttk.Combobox(self, values=["CSV", "XLSX"], state="readonly")
@@ -139,8 +152,20 @@ class PresetEditor(tk.Toplevel):
     def insert_field(self, field_name):
         self.textbox_format.insert(tk.INSERT, f"{{{field_name}}}")
 
+
+    def toggle_labels_per_serial(self, event=None):
+        if self.entries["logic"].get() == "Serial":
+            self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
+            self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
+        else:
+            self.labels_per_serial_label.grid_remove()
+            self.labels_per_serial_dropdown.grid_remove()
+
     def save_preset(self):
         preset = {"presettype": self.preset_type}
+        if self.preset_type == "Text" and self.entries.get("logic", "").get() == "Serial":
+            preset["labels_perserial"] = self.labels_per_serial_dropdown.get()
+
         for key, widget in self.entries.items():
             if isinstance(widget, tk.BooleanVar):
                 preset[key] = widget.get()

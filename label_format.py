@@ -4,7 +4,7 @@ from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_SECTION_START
 
-def get_row_and_column_indices(labeltemplate, labelsheetlayouttype):
+def get_row_and_column_indices(labeltemplate, labelsheetlayouttype='checkerboard'):
     """
     Determines row and column indices based on the label layout type and layout template.
     NOT FULLY IMPLEMENTED
