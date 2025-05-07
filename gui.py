@@ -22,6 +22,10 @@ class CryoPopLabelStudioLite:
         self.setup_main_ui()
         self.load_all_presets()
 
+
+
+
+
     def setup_menu(self):
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
@@ -46,6 +50,23 @@ class CryoPopLabelStudioLite:
         self.run_button = tk.Button(self.root, text="Generate Labels", command=self.run_label_maker, state=tk.DISABLED)
         self.run_button.pack(pady=10)
 
+    def apply_color_theme(self, theme_name):
+        themes = {
+            "Pink": "#FBDAE9",
+            "Green": "#D3F8E2",
+            "Blue": "#C6E9FB",
+            "Yellow": "#F4F0CD",
+            "Purple": "#EFDAFB"
+        }
+        bg = themes.get(theme_name, "white")
+        self.root.configure(bg=bg)
+        for child in self.root.winfo_children():
+            try:
+                child.configure(bg=bg)
+            except:
+                pass
+
+
     def load_all_presets(self):
         self.presets = {}
         if os.path.exists(self.presets_dir):
@@ -63,8 +84,56 @@ class CryoPopLabelStudioLite:
         if name in self.presets:
             path, data = self.presets[name]
             self.current_spec = LabelSpec(**data)
-            self.status_label.config(text=f"Loaded preset: {name}")
             self.run_button.config(state=tk.NORMAL)
+            self.apply_preset_to_ui(self.current_spec)
+            self.build_ui_from_spec(self.current_spec.ui_layout) 
+            print("Preset loaded")
+
+    def apply_preset_to_ui(self, spec):
+        # Apply color theme
+        if hasattr(spec, "color_theme"):
+            self.apply_color_theme(spec.color_theme)
+
+        # Update status label
+        if hasattr(spec, "name"):
+            self.status_label.config(text=f"Preset: {spec.name}")
+
+        # Update text preview (if applicable)
+        if hasattr(spec, "textboxformatinput") and hasattr(self, "preview_box"):
+            self.preview_box.delete("1.0", "end")
+            self.preview_box.insert("1.0", spec.textboxformatinput)
+
+        # Update font info
+        if hasattr(spec, "fontname") and hasattr(self, "font_label"):
+            self.font_label.config(text=f"Font: {spec.fontname}, {spec.fontsize}pt")
+    
+    def build_ui_from_spec(self, layout_data):
+        for element in layout_data.get("elements", []):
+            etype = element["type"]
+            eid = element["id"]
+
+            if etype == "textbox":
+                lbl = tk.Label(self.root, text=element["label"])
+                lbl.pack()
+                entry = tk.Entry(self.root)
+                entry.pack()
+                self.widgets[eid] = entry
+
+            elif etype == "button":
+                btn = tk.Button(self.root, text=element["label"], command=self.generate_labels)
+                btn.pack()
+                self.widgets[eid] = btn
+
+            elif etype == "textpreview":
+                txt = tk.Text(self.root, height=10, width=50)
+                txt.pack()
+                self.widgets[eid] = txt
+
+            elif etype == "label":
+                lbl = tk.Label(self.root, text=element["text"])
+                lbl.pack()
+                self.widgets[eid] = lbl
+
 
     def new_preset_window(self, preset_type):
         PresetEditor(self.root, preset_type=preset_type, on_save=self.on_preset_saved)

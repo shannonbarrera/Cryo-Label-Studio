@@ -31,7 +31,7 @@ from label_spec import LabelSpec
 
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
     labeltemplate = get_template(spec.labeltemplatepath)
-    row_indices, column_indices = get_row_and_column_indices(labeltemplate)
+    row_indices, column_indices = get_row_and_column_indices(labeltemplate, spec.labelsheetlayouttype)
     multi_pages = False
     final_doc = None
 

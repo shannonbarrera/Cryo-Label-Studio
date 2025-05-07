@@ -14,4 +14,6 @@ class LabelSpec:
         self.text_box_input = kwargs.get("text_box_input")
         self.identical_or_incremental = kwargs.get("identical_or_incremental")
         self.labels_perserial = kwargs.get("labels_perserial")
+        self.color_theme = kwargs.get("color_theme")
+        self.ui_layout = kwargs.get("ui_layout", {})
 

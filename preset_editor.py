@@ -174,6 +174,15 @@ class PresetEditor(tk.Toplevel):
             else:
                 val = widget.get()
                 preset[key] = int(val) if val.isdigit() else val
+        # Add UI layout to the preset if you want static layout elements saved
+            preset["ui_layout"] = {
+                "elements": [
+                    {"type": "textbox", "id": "user_input", "label": "Enter Sample Names"},
+                    {"type": "button", "id": "generate", "label": "Generate Labels"},
+                    {"type": "textpreview", "id": "preview_area"},
+                    {"type": "label", "id": "footer", "text": "CryoPop Label Studio Lite"}
+                ]
+            }
 
         if self.textbox_format:
             preset["textboxformatinput"] = self.textbox_format.get("1.0", tk.END).strip()
