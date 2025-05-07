@@ -1,5 +1,6 @@
 
 import tkinter as tk
+from label_templates import label_templates
 from tkinter import filedialog, messagebox, ttk
 import json
 import os
@@ -23,7 +24,7 @@ class PresetEditor(tk.Toplevel):
 
         fields = [
             ("name", "Preset Name"),
-            ("labeltemplatepath", "Label Sheet Template"),
+            ("labeltemplate", "Label Sheet Template"),
             ("inputtype", "Input Type"),
             ("copiesperlabel", "Labels per Sample"),
             ("fontname", "Font Name"),
@@ -32,6 +33,14 @@ class PresetEditor(tk.Toplevel):
             ("outputfilenameprefix", "Default Output Filename"),
             ("color_theme", "Color Scheme")
         ]
+
+        self.template_display_map = {
+            v["display_name"]: k for k, v in label_templates.items()
+        }
+        self.template_internal_map = {
+            k: v["display_name"] for k, v in label_templates.items()
+        }
+
 
         if self.preset_type == "File":
             fields.append(("partialsheet", "Partial Sheet Selection"))
@@ -63,11 +72,18 @@ class PresetEditor(tk.Toplevel):
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
-            elif key == "labeltemplatepath":
-                cb = ttk.Combobox(self, values=["Cryo Dots", "Avery 5160", "ToughSpots 1.5ml"], state="readonly")
-                cb.set(self.preset_data.get(key, "Cryo Dots"))
+            elif key == "labeltemplate":
+                display_names = list(self.template_display_map.keys())
+                cb = ttk.Combobox(self, values=display_names, state="readonly")
+
+                # Set display name from internal value in the preset (fallback to first)
+                internal_value = self.preset_data.get(key)
+                display_name = self.template_internal_map.get(internal_value, display_names[0])
+                cb.set(display_name)
+
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 self.entries[key] = cb
+
 
             elif key == "logic":
                 cb = ttk.Combobox(self, values=["Identical", "Serial"], state="readonly")
@@ -167,13 +183,18 @@ class PresetEditor(tk.Toplevel):
             preset["labels_perserial"] = self.labels_per_serial_dropdown.get()
 
         for key, widget in self.entries.items():
-            if isinstance(widget, tk.BooleanVar):
+            if key == "labeltemplate":
+                display_value = widget.get()
+                internal_value = self.template_display_map.get(display_value, display_value)
+                preset[key] = internal_value
+            elif isinstance(widget, tk.BooleanVar):
                 preset[key] = widget.get()
             elif isinstance(widget, ttk.Combobox):
                 preset[key] = widget.get()
             else:
                 val = widget.get()
                 preset[key] = int(val) if val.isdigit() else val
+
         # Add UI layout to the preset if you want static layout elements saved
             preset["ui_layout"] = {
                 "elements": [
