@@ -75,6 +75,7 @@ class PresetEditor(tk.Toplevel):
             elif key == "labeltemplate":
                 display_names = list(self.template_display_map.keys())
                 cb = ttk.Combobox(self, values=display_names, state="readonly")
+                cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
 
                 # Set display name from internal value in the preset (fallback to first)
                 internal_value = self.preset_data.get(key)
@@ -125,6 +126,7 @@ class PresetEditor(tk.Toplevel):
             elif key == "fontsize":
                 cb = ttk.Combobox(self, values=[str(i) for i in range(6, 21)], state="readonly")
                 cb.set(str(self.preset_data.get(key, "10")))
+                cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
@@ -146,16 +148,20 @@ class PresetEditor(tk.Toplevel):
             row_counter += 1
 
             tk.Label(self, text="Label Format").grid(row=row_counter, column=0, sticky="nw", padx=10)
-            self.textbox_format = tk.Text(self, width=40, height=4)
+            self.textbox_format = tk.Text(self, width=100, height=8)
             self.textbox_format.grid(row=row_counter, column=1, padx=10)
             row_counter += 1
 
         self.save_button = tk.Button(self, text="Save Preset", command=self.save_preset)
         self.save_button.grid(row=row_counter, column=0, columnspan=2, pady=20)
+        self.update_textbox_size()
 
     def load_sample_file(self):
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if path:
+            self.lift()
+            self.focus_force()
+
             with open(path, newline="") as f:
                 reader = csv.DictReader(f)
                 headers = reader.fieldnames
@@ -176,6 +182,36 @@ class PresetEditor(tk.Toplevel):
         else:
             self.labels_per_serial_label.grid_remove()
             self.labels_per_serial_dropdown.grid_remove()
+
+    def update_textbox_size(self, event=None):
+        if not self.textbox_format:
+            return
+
+        display_name = self.entries["labeltemplate"].get()
+        internal_name = self.template_display_map.get(display_name)
+
+        try:
+            font_size = int(self.entries["fontsize"].get())
+        except (ValueError, TypeError):
+            font_size = 10
+
+        from label_templates import label_templates
+        template = label_templates.get(internal_name)
+        if not template:
+            return
+
+        width_in = template["label_width_in"]
+        height_in = template["label_height_in"]
+
+        chars_per_line = int(width_in / (font_size * 0.07))
+        lines_per_label = int(height_in / (font_size * 0.17))
+
+        # Enforce generous minimums
+        self.textbox_format.config(
+            width=max(80, chars_per_line),
+            height=max(8, lines_per_label)
+        )
+
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
@@ -209,12 +245,16 @@ class PresetEditor(tk.Toplevel):
             preset["textboxformatinput"] = self.textbox_format.get("1.0", tk.END).strip()
 
         if not self.preset_path:
-            self.preset_path = filedialog.asksaveasfilename(
-                defaultextension=".json",
-                filetypes=[("JSON files", "*.json")],
-                initialdir="presets",
-                title="Save Preset As"
-            )
+            safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")).strip().replace(" ", "_")
+            counter = 1
+            filename = f"{safe_name}.json"
+            full_path = os.path.join("presets", filename)
+            while os.path.exists(full_path):
+                filename = f"{safe_name}_{counter}.json"
+                full_path = os.path.join("presets", filename)
+                counter += 1
+            self.preset_path = full_path
+
 
         if self.preset_path:
             os.makedirs(os.path.dirname(self.preset_path), exist_ok=True)

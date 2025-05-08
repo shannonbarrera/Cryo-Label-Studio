@@ -21,6 +21,8 @@ class CryoPopLabelStudioLite:
         self.setup_menu()
         self.setup_main_ui()
         self.load_all_presets()
+        self.widgets = {}
+
 
 
 
@@ -86,7 +88,9 @@ class CryoPopLabelStudioLite:
             self.current_spec = LabelSpec(**data)
             self.run_button.config(state=tk.NORMAL)
             self.apply_preset_to_ui(self.current_spec)
-            self.build_ui_from_spec(self.current_spec.ui_layout) 
+            self.clear_ui()
+            self.build_ui_from_spec(self.current_spec.ui_layout)
+
             print("Preset loaded")
 
     def apply_preset_to_ui(self, spec):
@@ -134,6 +138,13 @@ class CryoPopLabelStudioLite:
                 lbl.pack()
                 self.widgets[eid] = lbl
 
+    def clear_ui(self):
+        for widget in self.widgets.values():
+            try:
+                widget.destroy()
+            except:
+                pass
+        self.widgets.clear()
 
     def new_preset_window(self, preset_type):
         PresetEditor(self.root, preset_type=preset_type, on_save=self.on_preset_saved)

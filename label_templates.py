@@ -117,7 +117,7 @@ label_templates = {
         "page_height_in": 11.0,
     },
     "SPOT-4000": {
-        "display_name": "Tough-Spots 1.00 in,
+        "display_name": "Tough-Spots 1.00 in",
         "label_width_in": 1.0,
         "label_height_in": 1.0,
         "top_margin_in": 0.5,
