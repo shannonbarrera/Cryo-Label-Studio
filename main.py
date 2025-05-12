@@ -36,33 +36,31 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     final_doc = None
 
     if spec.presettype == "File":
-        # Load data from CSV or XLSX
-        if spec.inputtype == "CSV":
+        # Load data from file based on extension
+        if input_file_path.lower().endswith(".csv"):
             data_list = get_data_list_csv(input_file_path, spec.tablecoords, spec.textboxformatinput)
-        elif spec.inputtype == "XLSX":
+        elif input_file_path.lower().endswith((".xls", ".xlsx")):
             data_list = get_data_list_xlsx(input_file_path, spec.tablecoords, spec.textboxformatinput)
         else:
-            raise ValueError("Unsupported input type for File preset")
+            raise ValueError("Unsupported file type. Please upload a .csv or .xlsx file.")
 
         # Optional truncation
         if spec.truncation_indices:
             data_list = truncate_data(data_list, spec.truncation_indices)
 
-        # Choose formatting function based on copies
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
         max_labels_per_page = get_max_labels_per_page(labeltemplate, spec.labelsheetlayouttype, spec.copiesperlabel)
 
-        # Paginate
         pages = [
             data_list[i : i + max_labels_per_page]
             for i in range(0, len(data_list), max_labels_per_page)
         ]
 
-        # Format and combine pages
         final_doc = format_function(pages[0], labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
         for page in pages[1:]:
             next_doc = format_function(page, labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
             final_doc = combine_docs(final_doc, next_doc)
+
 
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental

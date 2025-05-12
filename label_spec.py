@@ -2,7 +2,6 @@
 class LabelSpec:
     def __init__(self, **kwargs):
         self.presettype = kwargs.get("presettype")
-        self.inputtype = kwargs.get("inputtype")
         self.copiesperlabel = kwargs.get("copiesperlabel")
         self.textboxformatinput = kwargs.get("textboxformatinput")
         self.labeltemplatepath = kwargs.get("labeltemplatepath")

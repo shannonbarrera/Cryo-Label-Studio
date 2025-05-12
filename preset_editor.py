@@ -25,7 +25,6 @@ class PresetEditor(tk.Toplevel):
         fields = [
             ("name", "Preset Name"),
             ("labeltemplate", "Label Sheet Template"),
-            ("inputtype", "Input Type"),
             ("copiesperlabel", "Labels per Sample"),
             ("fontname", "Font Name"),
             ("fontsize", "Font Size"),
@@ -47,7 +46,7 @@ class PresetEditor(tk.Toplevel):
         elif self.preset_type == "Text":
             fields.insert(2, ("logic", "Logic")) 
    
-            fields = [f for f in fields if f[0] not in ("inputtype", "copiesperlabel")]
+            fields = [f for f in fields if f[0] != "copiesperlabel"]
 
         row_counter = 0
         for key, label in fields:
@@ -105,11 +104,6 @@ class PresetEditor(tk.Toplevel):
 
                 row_counter += 2  # use 2 rows if Serial is selected, otherwise will be handled dynamically
 
-            elif key == "inputtype":
-                cb = ttk.Combobox(self, values=["CSV", "XLSX"], state="readonly")
-                cb.set(self.preset_data.get(key, "CSV"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
-                self.entries[key] = cb
 
             elif key == "copiesperlabel":
                 cb = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
@@ -124,11 +118,12 @@ class PresetEditor(tk.Toplevel):
                 self.entries[key] = cb
 
             elif key == "fontsize":
-                cb = ttk.Combobox(self, values=[str(i) for i in range(6, 21)], state="readonly")
-                cb.set(str(self.preset_data.get(key, "10")))
+                cb = ttk.Combobox(self, values=["5.5", "6", "6.5", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"], state="readonly")
+                cb.set(str(self.preset_data.get(key, "6")))
                 cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 self.entries[key] = cb
+
 
             else:
                 entry = tk.Entry(self, width=40)
@@ -208,8 +203,8 @@ class PresetEditor(tk.Toplevel):
 
         # Enforce generous minimums
         self.textbox_format.config(
-            width=max(80, chars_per_line),
-            height=max(8, lines_per_label)
+            width=max(45, chars_per_line),
+            height=max(6, lines_per_label)
         )
 
 
