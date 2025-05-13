@@ -2,17 +2,18 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from label_spec import LabelSpec
-import main
+from main import main
 import json
 import os
-
+from label_templates import label_templates
 from preset_editor import PresetEditor
+from data_extract import get_data_list_csv, get_data_list_xlsx
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
         self.root = root
         self.root.title("CryoPop Label Studio Lite")
-        self.root.geometry("600x400")
+        self.root.geometry("600x500")
 
         self.current_spec = None
         self.presets_dir = "presets"
@@ -22,10 +23,6 @@ class CryoPopLabelStudioLite:
         self.setup_main_ui()
         self.load_all_presets()
         self.widgets = {}
-
-
-
-
 
 
     def setup_menu(self):
@@ -49,8 +46,6 @@ class CryoPopLabelStudioLite:
         self.status_label = tk.Label(self.root, text="", font=("Arial", 10))
         self.status_label.pack(pady=10)
 
-        self.run_button = tk.Button(self.root, text="Generate Labels", command=self.run_label_maker, state=tk.DISABLED)
-        self.run_button.pack(pady=10)
 
     def apply_color_theme(self, theme_name):
         themes = {
@@ -86,7 +81,6 @@ class CryoPopLabelStudioLite:
         if name in self.presets:
             path, data = self.presets[name]
             self.current_spec = LabelSpec(**data)
-            self.run_button.config(state=tk.NORMAL)
             self.apply_preset_to_ui(self.current_spec)
             self.clear_ui()
             self.build_ui_from_spec(self.current_spec.ui_layout)
@@ -99,8 +93,10 @@ class CryoPopLabelStudioLite:
             self.apply_color_theme(spec.color_theme)
 
         # Update status label
-        if hasattr(spec, "name"):
-            self.status_label.config(text=f"Preset: {spec.name}")
+        
+        template_id = getattr(spec, "labeltemplate", "Unknown")
+        template_display = label_templates.get(template_id, {}).get("display_name", template_id)
+        self.status_label.config(text=f"Label Template: {template_display}")
 
         # Update text preview (if applicable)
         if hasattr(spec, "textboxformatinput") and hasattr(self, "preview_box"):
@@ -117,26 +113,124 @@ class CryoPopLabelStudioLite:
             eid = element["id"]
 
             if etype == "textbox":
-                lbl = tk.Label(self.root, text=element["label"])
-                lbl.pack()
+
                 entry = tk.Entry(self.root)
                 entry.pack()
                 self.widgets[eid] = entry
 
             elif etype == "button":
-                btn = tk.Button(self.root, text=element["label"], command=self.generate_labels)
-                btn.pack()
+                if eid == "generate":
+                    btn = tk.Button(self.root, text=element["label"], command=self.generate_labels)
+                elif eid == "upload_file":
+                    btn = tk.Button(self.root, text=element["label"], command=self.upload_sample_file)
+                else:
+                    btn = tk.Button(self.root, text=element["label"])
+                btn.pack(padx=10, pady=15)
                 self.widgets[eid] = btn
 
             elif etype == "textpreview":
                 txt = tk.Text(self.root, height=10, width=50)
-                txt.pack()
+                txt.pack(padx=10, pady=15)
                 self.widgets[eid] = txt
 
             elif etype == "label":
-                lbl = tk.Label(self.root, text=element["text"])
-                lbl.pack()
+                lbl = tk.Label(self.root, text=element.get("text", ""))
+                lbl.pack(padx=10, pady=15)
                 self.widgets[eid] = lbl
+
+    def build_ui_from_preset(self, spec):
+        self.clear_ui()
+
+        # Label at top: "Cryo Dots – 1.28 x 0.50 (Serial)"
+        label_name = label_templates.get(spec.labeltemplate, {}).get("display_name", spec.labeltemplate)
+        logic_label = getattr(spec, "identical_or_incremental", "Unknown").capitalize()
+        self.template_label = tk.Label(self.root, text=f"{label_name} ({logic_label})", font=("Arial", 12, "bold"))
+        self.template_label.pack(pady=10)
+
+        if spec.presettype == "Text":
+            # Build dynamic text input box
+            template = label_templates.get(spec.labeltemplate, {})
+            width_in = template.get("label_width_in", 1.0)
+            height_in = template.get("label_height_in", 0.5)
+            font_size = int(getattr(spec, "fontsize", 10))
+
+            chars = int(width_in / (font_size * 0.07))
+            lines = int(height_in / (font_size * 0.17))
+
+            self.text_entry = tk.Text(self.root, width=max(40, chars), height=max(4, lines), font=(spec.fontname, font_size))
+            self.text_entry.pack(padx=10, pady=5)
+
+            # Optional row selectors if partial sheet is enabled
+            if getattr(spec, "partialsheet", False):
+                self.row_start_var = tk.StringVar(value="0")
+                self.row_end_var = tk.StringVar(value="10")
+                tk.Label(self.root, text="Start Row").pack()
+                tk.Entry(self.root, textvariable=self.row_start_var).pack()
+                tk.Label(self.root, text="End Row").pack()
+                tk.Entry(self.root, textvariable=self.row_end_var).pack()
+
+            # Save file button
+            self.save_button = tk.Button(self.root, text="Save Labels", command=self.save_labels)
+            self.save_button.pack(pady=10)
+
+        elif spec.presettype == "File":
+            # TODO: build File Input UI next
+            pass
+
+    def generate_labels(self):
+        spec = self.current_spec
+
+        if not spec:
+            messagebox.showerror("Error", "No preset loaded.")
+            return
+
+        output_path = filedialog.asksaveasfilename(
+            defaultextension=".docx" if spec.outputformat.lower() == "docx" else ".pdf",
+            filetypes=[("Word Document", "*.docx"), ("PDF Document", "*.pdf")]
+        )
+        if not output_path:
+            return
+
+        try:
+            if spec.presettype == "Text":
+                text = self.widgets["user_input"].get("1.0", "end").strip()
+                if spec.identical_or_incremental.lower() == "serial" and not text.isnumeric():
+                    messagebox.showerror("Error", "Serial format must be a number.")
+                    return
+                main(spec, text_box_input=text, output_file_path=output_path)
+
+            elif spec.presettype == "File":
+                if not hasattr(self, "input_file_path") or not self.input_file_path:
+                    messagebox.showerror("Error", "Please upload a CSV or XLSX file.")
+                    return
+                main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
+
+            messagebox.showinfo("Success", f"Labels saved to:\n{output_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Label generation failed:\n{e}")
+
+    def upload_sample_file(self):
+        path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])
+        if path:
+            self.input_file_path = path
+            try:
+
+                if path.endswith(".csv"):
+                    data_list = get_data_list_csv(path, self.current_spec.textboxformatinput)
+                else:
+                    data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
+
+                if data_list and len(data_list) > 0:
+                    preview = data_list[0]
+                else:
+                    preview = "No data found or invalid format."
+
+                self.widgets["preview_area"].delete("1.0", "end")
+                self.widgets["preview_area"].insert("1.0", preview)
+
+            except Exception as e:
+                messagebox.showwarning("Warning", f"Preview failed:\n{e}")
+
 
     def clear_ui(self):
         for widget in self.widgets.values():

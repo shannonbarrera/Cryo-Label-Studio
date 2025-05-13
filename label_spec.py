@@ -4,7 +4,7 @@ class LabelSpec:
         self.presettype = kwargs.get("presettype")
         self.copiesperlabel = kwargs.get("copiesperlabel")
         self.textboxformatinput = kwargs.get("textboxformatinput")
-        self.labeltemplatepath = kwargs.get("labeltemplatepath")
+        self.labeltemplate = kwargs.get("labeltemplate")
         self.fontname = kwargs.get("fontname")
         self.fontsize = kwargs.get("fontsize")
         self.outputfilenameprefix = kwargs.get("outputfilenameprefix")
