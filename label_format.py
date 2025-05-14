@@ -15,9 +15,22 @@ def get_layout_from_spec(spec):
 
     rows = template["labels_down"]
     cols = template["labels_across"]
+    print(rows)
+    print(cols)
+    row_indices = []
+    i = 0
+    while len(row_indices) < rows:
+        row_indices.append(i)
+        i += 2
 
-    row_indices = list(range(rows))
-    col_indices = list(range(cols))
+    col_indices = []
+    j = 0
+    while len(col_indices) < cols:
+        col_indices.append(j)
+        j += 2
+
+    print(col_indices)
+    print(row_indices)
     return row_indices, col_indices
 
 def generate_blank_docx_template(labeltemplate_id):
@@ -34,15 +47,48 @@ def generate_blank_docx_template(labeltemplate_id):
         raise ValueError(f"Unknown label template: {labeltemplate_id}")
 
     spec = label_templates[labeltemplate_id]
-
     doc = Document()
-    table = doc.add_table(rows=spec["labels_down"], cols=spec["labels_across"])
+    section = doc.sections[0]
+    section.page_width = Inches(spec["page_width_in"])
+    section.page_height = Inches(spec["page_height_in"])
+    section.top_margin = Inches(spec["top_margin_in"])
+    section.left_margin = Inches(spec["side_margin_in"])
+    section.right_margin = Inches(spec["side_margin_in"])
+    section.bottom_margin = Inches(0.5)
 
-    # Optional: Set exact label size (cosmetic, Word rendering isn’t precise)
-    for row in table.rows:
-        for cell in row.cells:
-            cell.width = Inches(spec["label_width_in"])
-            # Padding or style tweaks could go here
+    rows = (spec["labels_down"] * 2) - 1
+    cols = (spec["labels_across"] * 2) - 1
+    table = doc.add_table(rows=rows, cols=cols)
+
+    label_width = spec["label_width_in"]
+    label_height = spec["label_height_in"]
+    spacer_col_width = spec["horizontal_pitch_in"] - label_width
+    spacer_row_height = spec["vertical_pitch_in"] - label_height
+
+    for r in range(rows):
+        tr = table.rows[r]._tr
+        trPr = tr.get_or_add_trPr()
+        trHeight = OxmlElement('w:trHeight')
+
+        if r % 2 == 0:
+            trHeight.set(qn('w:val'), str(int(label_height * 1440)))
+        else:
+            trHeight.set(qn('w:val'), str(int(spacer_row_height * 1440)))
+        trPr.append(trHeight)
+
+        for c in range(cols):
+            cell = table.cell(r, c)
+            if c % 2 == 0:
+                cell.width = Inches(label_width)
+            else:
+                cell.width = Inches(spacer_col_width)
+            # Remove padding
+            tc = cell._tc
+            tcPr = tc.get_or_add_tcPr()
+            for side in ["top", "start", "bottom", "end"]:
+                mar = OxmlElement(f'w:tcMar')
+                mar.set(qn(f'w:{side}'), "0")
+                tcPr.append(mar)
 
     return doc
 
@@ -299,7 +345,7 @@ def apply_format_to_row(textboxformatinput, row_data):
         if value is None:
             continue
         if isinstance(value, datetime):
-            value = value.strftime('%d-%m-%Y')
+            value = value.strftime('%m-%d-%Y')
         placeholder_to_value[key] = str(value)
 
     try:

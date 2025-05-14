@@ -176,13 +176,16 @@ class PresetEditor(tk.Toplevel):
                 widget.destroy()
 
             # Create new buttons for each header
-            for i, header in enumerate(headers):
+            filtered_headers = [h for h in headers if h and str(h).strip()]
+
+            for i, header in enumerate(filtered_headers):
                 btn = tk.Button(
                     self.header_buttons_frame,
                     text=header,
                     command=lambda h=header: self.insert_field(h)
                 )
                 btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
+
 
 
     def insert_field(self, field_name):
