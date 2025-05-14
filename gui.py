@@ -8,6 +8,8 @@ import os
 from label_templates import label_templates
 from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
+from label_format import apply_format_to_row
+
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
@@ -201,7 +203,7 @@ class CryoPopLabelStudioLite:
 
             elif spec.presettype == "File":
                 if not hasattr(self, "input_file_path") or not self.input_file_path:
-                    messagebox.showerror("Error", "Please upload a CSV or XLSX file.")
+                    messagebox.showerror("Error", "Please upload a CSV or file.")
                     return
                 main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
 
@@ -221,7 +223,7 @@ class CryoPopLabelStudioLite:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
 
                 if data_list and len(data_list) > 0:
-                    preview = data_list[0]
+                    preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0])
                 else:
                     preview = "No data found or invalid format."
 

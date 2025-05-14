@@ -15,13 +15,16 @@ def get_data_list_csv(input_file_path, textboxformatinput):
         list: Extracted label data.
     """
     label_data_list_format = get_label_data_list_format(textboxformatinput)
-    # Convert label_data_list_format_alpha into a list of indices from the row
+
+    # Convert label_data_list_format into a list of indices from the row
     batchdata = []
     with open(input_file_path, 'r') as file:
         csv_reader = list(csv.reader(file))
-        for row in csv_reader:
+        columns_in_csv = csv_reader[0]
+        indices_for_labeldata = [columns_in_csv.index(col) for col in label_data_list_format if col in columns_in_csv]
+        for row in csv_reader[1:]:
             data = []
-            for index in label_data_list_format:
+            for index in indices_for_labeldata:
                 data.append(row[index])
             batchdata.append(data)
 
@@ -34,7 +37,6 @@ def get_data_list_xlsx(input_file_path, textboxformatinput):
 
     Args:
         input_file_path (str): Path to the Excel file.
-        tablecoords (list): Table boundaries in the format [[start_row, start_col], [end_row, end_col]].
         textboxformatinput (str): Column layout format using letters.
 
     Returns:
@@ -43,6 +45,7 @@ def get_data_list_xlsx(input_file_path, textboxformatinput):
     workbook = xlsx.load_workbook(filename=input_file_path, read_only=True)
     sheet = workbook.active
     info = extract_label_info(sheet, textboxformatinput)
+    info = [row for row in info[1:] if any(cell is not None for cell in row)]
     workbook.close()
     return info
 
@@ -59,13 +62,13 @@ def extract_label_info(sheet, textboxformatinput):
     Returns:
         list: List of label entries (each entry is a list).
     """
-
     label_data_list_format = get_label_data_list_format(textboxformatinput)
-    
+    columns_in_sheet = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
     batchdata = []
-    for row in sheet.iter_rows:
+    indices_for_labeldata = [columns_in_sheet.index(col) for col in label_data_list_format if col in columns_in_sheet]
+    for row in sheet.iter_rows():
         extracted = []
-        for idx in label_data_list_format:
+        for idx in indices_for_labeldata:
             if idx < len(row):
                 extracted.append(row[idx].value)
         if extracted:
@@ -82,4 +85,5 @@ def get_label_data_list_format(textboxformatinput):
     Returns:
         list: List of zero-based column indices.
     """
-    return list(set(re.findall(r"\{(\w+)\}", textboxformatinput)))
+    findlist = re.findall(r'{(.*?)}', textboxformatinput)
+    return findlist

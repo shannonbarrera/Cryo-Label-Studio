@@ -5,6 +5,7 @@ from tkinter import filedialog, messagebox, ttk
 import json
 import os
 import csv
+import openpyxl as xlsx
 
 class PresetEditor(tk.Toplevel):
     def __init__(self, master, preset_type="File", preset_data=None, preset_path=None, on_save=None):
@@ -152,19 +153,37 @@ class PresetEditor(tk.Toplevel):
         self.update_textbox_size()
 
     def load_sample_file(self):
-        path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])
         if path:
             self.lift()
             self.focus_force()
 
-            with open(path, newline="") as f:
-                reader = csv.DictReader(f)
-                headers = reader.fieldnames
-                for widget in self.header_buttons_frame.winfo_children():
-                    widget.destroy()
-                for i, header in enumerate(headers):
-                    btn = tk.Button(self.header_buttons_frame, text=header, command=lambda h=header: self.insert_field(h))
-                    btn.grid(row=i//3, column=i%3, padx=5, pady=5)
+            # Get headers based on file extension
+            if path.lower().endswith(".csv"):
+                with open(path, newline="", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    headers = next(reader)  # first row
+            elif path.lower().endswith(".xlsx"):
+                wb = xlsx.load_workbook(path, read_only=True)
+                sheet = wb.active
+                headers = [cell.value for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+            else:
+                print("Unsupported file type")
+                return
+
+            # Clear previous buttons
+            for widget in self.header_buttons_frame.winfo_children():
+                widget.destroy()
+
+            # Create new buttons for each header
+            for i, header in enumerate(headers):
+                btn = tk.Button(
+                    self.header_buttons_frame,
+                    text=header,
+                    command=lambda h=header: self.insert_field(h)
+                )
+                btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
+
 
     def insert_field(self, field_name):
         self.textbox_format.insert(tk.INSERT, f"{{{field_name}}}")
@@ -221,7 +240,8 @@ class PresetEditor(tk.Toplevel):
             elif isinstance(widget, tk.BooleanVar):
                 preset[key] = widget.get()
             elif isinstance(widget, ttk.Combobox):
-                preset[key] = widget.get()
+                val = widget.get()
+                preset[key] = int(val) if key == "copiesperlabel" else val
             else:
                 val = widget.get()
                 preset[key] = int(val) if val.isdigit() else val

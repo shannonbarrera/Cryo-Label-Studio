@@ -1,35 +1,54 @@
 import sys
+import re
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_SECTION_START
+from datetime import datetime
+from label_templates import label_templates
 
-def get_row_and_column_indices(labeltemplate, labelsheetlayouttype='checkerboard'):
+
+def get_layout_from_spec(spec):
+    template = label_templates.get(spec.labeltemplate)
+    if not template:
+        raise ValueError(f"Unknown label template ID: {spec.labeltemplate}")
+
+    rows = template["labels_down"]
+    cols = template["labels_across"]
+
+    row_indices = list(range(rows))
+    col_indices = list(range(cols))
+    return row_indices, col_indices
+
+def generate_blank_docx_template(labeltemplate_id):
     """
-    Determines row and column indices based on the label layout type and layout template.
-    NOT FULLY IMPLEMENTED
+    Creates a blank Word Document with a table matching the specified label template layout.
 
     Args:
-        labeltemplate (str): Path to label template file.
-        labelsheetlayouttype (str): Layout type ('grid' or 'checkerboard').
+        labeltemplate_id (str): Key from label_templates.py (e.g., "LCRY-1700").
 
     Returns:
-        tuple: (list of row indices, list of column indices)
+        docx.Document: A Word document with the table structure and label cell dimensions.
     """
-    labelsheet = Document(labeltemplate)
-    table = labelsheet.tables[0]
-    
-    if labelsheetlayouttype == "grid":
-        row_indices = list(range(len(table.rows)))
-        column_indices = list(range(len(table.columns)))
+    if labeltemplate_id not in label_templates:
+        raise ValueError(f"Unknown label template: {labeltemplate_id}")
 
-    elif labelsheetlayouttype == "checkerboard":
-        row_indices = [i for i in range(len(table.rows)) if i % 2 == 0]
-        column_indices = [j for j in range(len(table.columns)) if j % 2 == 0]
+    spec = label_templates[labeltemplate_id]
 
-    return row_indices, column_indices
+    doc = Document()
+    table = doc.add_table(rows=spec["labels_down"], cols=spec["labels_across"])
 
-def get_max_labels_per_page(labeltemplate, labelsheetlayouttype, copiesperlabel):
+    # Optional: Set exact label size (cosmetic, Word rendering isn’t precise)
+    for row in table.rows:
+        for cell in row.cells:
+            cell.width = Inches(spec["label_width_in"])
+            # Padding or style tweaks could go here
+
+    return doc
+
+
+
+def get_max_labels_per_page(spec, labeltemplate, copiesperlabel):
     """
     Calculates how many label entries can fit per page.
 
@@ -42,9 +61,8 @@ def get_max_labels_per_page(labeltemplate, labelsheetlayouttype, copiesperlabel)
         int: Maximum number of unique label entries per page.
     """
     
-    if labelsheetlayouttype in ["grid", "checkerboard"]:
-        row_indices, column_indices = get_row_and_column_indices(labeltemplate, labelsheetlayouttype)
-        total_cells = len(row_indices) * len(column_indices)
+    row_indices, column_indices = get_layout_from_spec(spec)
+    total_cells = len(row_indices) * len(column_indices)
     return total_cells // copiesperlabel
 
 def format_labels_single(datalist, labeltemplate, rowindices, columnindices, copiesperlabel, textboxformatinput, fontname, fontsize):
@@ -113,7 +131,6 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
 
     # Write the last rows of labels
     remainingrows = rowindices[-1] % copiesperlabel
-    print(remainingrows)
 
     lastrowcolumnindices = []
     for ind in columnindices:
@@ -122,7 +139,6 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
                 lastrowcolumnindices.append(ind) 
 
     for rind in rowindices[-remainingrows:]:
-        print(rind)
         currentrow = table.rows[rind].cells
         for cind in lastrowcolumnindices:
             if labelcount >= len(datalist):
@@ -131,7 +147,6 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
             cells_to_write = []
             for i in range(copiesperlabel):
                 cells_to_write.append(cind + (2 * i))
-            print(cells_to_write)
             for cell in cells_to_write:
                 format_label_cell(currentrow[cell], datalist[labelcount], textboxformatinput, fontname, fontsize)
             labelcount += 1
@@ -245,17 +260,10 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
          Doe, John
          03/29/2025"
     """
-    label_text = ""
+    
     if textboxformatinput:
-        data_index = 0
-        for character in textboxformatinput:
-            if data_index >= len(data):
-                break
-            if character.isalpha() == False:
-                label_text = label_text + character
-            else:
-                label_text = label_text + data[data_index]
-                data_index += 1
+        label_text = apply_format_to_row(textboxformatinput, data)
+        
 
         cell.text = label_text
 
@@ -268,6 +276,36 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
             run.font.name = fontname
             run.bold = True
     return
+
+def apply_format_to_row(textboxformatinput, row_data):
+    """
+    Applies a label format string with placeholders to a row of data.
+    Skips missing or None values and formats datetime objects as dates.
+
+    Args:
+        textboxformatinput(str): A string with placeholders like "{SampleID}\n{Date}".
+        row_data (list): A list of values in the same order as placeholders.
+
+    Returns:
+        str: The formatted label string.
+    """
+    placeholders = re.findall(r'{(.*?)}', textboxformatinput)
+    placeholder_to_value = {}
+
+    for i, key in enumerate(placeholders):
+        if i >= len(row_data):
+            continue
+        value = row_data[i]
+        if value is None:
+            continue
+        if isinstance(value, datetime):
+            value = value.strftime('%d-%m-%Y')
+        placeholder_to_value[key] = str(value)
+
+    try:
+        return textboxformatinput.format(**placeholder_to_value)
+    except KeyError:
+        return ""  # Return empty string if format fails for some reason
 
 def combine_docs(doc1, doc2):
     """

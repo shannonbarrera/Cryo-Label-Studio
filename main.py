@@ -1,5 +1,7 @@
 import sys
 
+from label_templates import label_templates
+
 from data_extract import (
     get_data_list_csv,
     get_data_list_xlsx
@@ -16,41 +18,41 @@ from file_io import (
 )
 
 from label_format import (
-    get_row_and_column_indices,
+    generate_blank_docx_template,
     get_max_labels_per_page,
     format_labels_single,
     format_labels_multi,
     format_labels_identical,
     format_labels_incremental,
-    combine_docs
+    combine_docs,
+    get_layout_from_spec
 )
-
-
 
 from label_spec import LabelSpec
 
+
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
-    labeltemplate = get_template(spec.labeltemplatepath)
-    row_indices, column_indices = get_row_and_column_indices(labeltemplate, spec.labelsheetlayouttype)
+    labeltemplate = generate_blank_docx_template(spec.labeltemplate)
+    row_indices, column_indices = get_layout_from_spec(spec)
+    
     multi_pages = False
     final_doc = None
 
     if spec.presettype == "File":
         # Load data from file based on extension
         if input_file_path.lower().endswith(".csv"):
-            data_list = get_data_list_csv(input_file_path, spec.tablecoords, spec.textboxformatinput)
+            data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
         elif input_file_path.lower().endswith((".xls", ".xlsx")):
-            data_list = get_data_list_xlsx(input_file_path, spec.tablecoords, spec.textboxformatinput)
+            data_list = get_data_list_xlsx(input_file_path, spec.textboxformatinput)
         else:
             raise ValueError("Unsupported file type. Please upload a .csv or .xlsx file.")
 
         # Optional truncation
         if spec.truncation_indices:
             data_list = truncate_data(data_list, spec.truncation_indices)
-
+        
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
-        max_labels_per_page = get_max_labels_per_page(labeltemplate, spec.labelsheetlayouttype, spec.copiesperlabel)
-
+        max_labels_per_page = get_max_labels_per_page(spec, labeltemplate, spec.copiesperlabel)
         pages = [
             data_list[i : i + max_labels_per_page]
             for i in range(0, len(data_list), max_labels_per_page)
