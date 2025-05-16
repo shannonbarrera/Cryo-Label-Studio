@@ -1,11 +1,13 @@
 import sys
 import re
+from docx.oxml import OxmlElement
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_SECTION_START
 from datetime import datetime
 from label_templates import label_templates
+from docx.oxml.ns import qn
 
 
 def get_layout_from_spec(spec):
@@ -15,8 +17,7 @@ def get_layout_from_spec(spec):
 
     rows = template["labels_down"]
     cols = template["labels_across"]
-    print(rows)
-    print(cols)
+
     row_indices = []
     i = 0
     while len(row_indices) < rows:
@@ -125,24 +126,25 @@ def format_labels_single(datalist, labeltemplate, rowindices, columnindices, cop
     Returns:
         Document: Word document with formatted labels.
     """
-    labelsheet = Document(labeltemplate)
+    labelsheet = labeltemplate
     table = labelsheet.tables[0]
-
+    print("131")
     labeldata = 0
 
     for rind in rowindices:
         if labeldata >= len(datalist):
             return labelsheet
-
+        print("137")
         currentrow = table.rows[rind].cells
-
+        print("139")
         for cind in columnindices:
+            print(labeldata)
             if labeldata >= len(datalist):
                 return labelsheet
 
             format_label_cell(currentrow[cind], datalist[labeldata], textboxformatinput, fontname, fontsize)
             labeldata += 1
-
+    print("146")
     return labelsheet
 
 
@@ -306,19 +308,21 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
          Doe, John
          03/29/2025"
     """
-    
+    print("format_label_cell")
     if textboxformatinput:
         label_text = apply_format_to_row(textboxformatinput, data)
-        
-
+        print("314")
+        print(label_text)
         cell.text = label_text
+        print("317")
 
     else: 
         cell.text = data
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        print("323")
         for run in paragraph.runs:
-            run.font.size = Pt(fontsize)
+            run.font.size = Pt(int(fontsize))
             run.font.name = fontname
             run.bold = True
     return

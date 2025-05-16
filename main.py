@@ -57,15 +57,17 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
             data_list[i : i + max_labels_per_page]
             for i in range(0, len(data_list), max_labels_per_page)
         ]
-
+        print("60")
         final_doc = format_function(pages[0], labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
+        print("62")
         for page in pages[1:]:
             next_doc = format_function(page, labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
             final_doc = combine_docs(final_doc, next_doc)
 
-
+        print("67")
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
+        print("logic")
         if logic == "identical":
             final_doc = format_labels_identical(text_box_input, labeltemplate, row_indices, column_indices, spec.fontname, spec.fontsize)
         elif logic == "incremental":
