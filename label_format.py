@@ -10,87 +10,12 @@ from label_templates import label_templates
 from docx.oxml.ns import qn
 
 
-def get_layout_from_spec(spec):
-    template = label_templates.get(spec.labeltemplate)
-    if not template:
-        raise ValueError(f"Unknown label template ID: {spec.labeltemplate}")
-
-    rows = template["labels_down"]
-    cols = template["labels_across"]
-
-    row_indices = []
-    i = 0
-    while len(row_indices) < rows:
-        row_indices.append(i)
-        i += 2
-
-    col_indices = []
-    j = 0
-    while len(col_indices) < cols:
-        col_indices.append(j)
-        j += 2
+def get_row_and_column_indices(labelsheet):
+    table = labelsheet.tables[0]
+    row_indices = [i for i in range(len(table.rows)) if i % 2 == 0]
+    col_indices = [j for j in range(len(table.columns)) if j % 2 == 0]
 
     return row_indices, col_indices
-
-def generate_blank_docx_template(labeltemplate_id):
-    """
-    Creates a blank Word Document with a table matching the specified label template layout.
-
-    Args:
-        labeltemplate_id (str): Key from label_templates.py (e.g., "LCRY-1700").
-
-    Returns:
-        docx.Document: A Word document with the table structure and label cell dimensions.
-    """
-    if labeltemplate_id not in label_templates:
-        raise ValueError(f"Unknown label template: {labeltemplate_id}")
-
-    spec = label_templates[labeltemplate_id]
-    doc = Document()
-    section = doc.sections[0]
-    section.page_width = Inches(spec["page_width_in"])
-    section.page_height = Inches(spec["page_height_in"])
-    section.top_margin = Inches(spec["top_margin_in"])
-    section.left_margin = Inches(spec["side_margin_in"])
-    section.right_margin = Inches(spec["side_margin_in"])
-    section.bottom_margin = Inches(0.5)
-
-    rows = (spec["labels_down"] * 2) - 1
-    cols = (spec["labels_across"] * 2) - 1
-    table = doc.add_table(rows=rows, cols=cols)
-
-    label_width = spec["label_width_in"]
-    label_height = spec["label_height_in"]
-    spacer_col_width = spec["horizontal_pitch_in"] - label_width
-    spacer_row_height = spec["vertical_pitch_in"] - label_height
-
-    for r in range(rows):
-        tr = table.rows[r]._tr
-        trPr = tr.get_or_add_trPr()
-        trHeight = OxmlElement('w:trHeight')
-
-        if r % 2 == 0:
-            trHeight.set(qn('w:val'), str(int(label_height * 1440)))
-        else:
-            trHeight.set(qn('w:val'), str(int(spacer_row_height * 1440)))
-        trPr.append(trHeight)
-
-        for c in range(cols):
-            cell = table.cell(r, c)
-            if c % 2 == 0:
-                cell.width = Inches(label_width)
-            else:
-                cell.width = Inches(spacer_col_width)
-            # Remove padding
-            tc = cell._tc
-            tcPr = tc.get_or_add_tcPr()
-            for side in ["top", "start", "bottom", "end"]:
-                mar = OxmlElement(f'w:tcMar')
-                mar.set(qn(f'w:{side}'), "0")
-                tcPr.append(mar)
-
-    return doc
-
 
 
 def get_max_labels_per_page(spec, labeltemplate, copiesperlabel):
@@ -106,7 +31,7 @@ def get_max_labels_per_page(spec, labeltemplate, copiesperlabel):
         int: Maximum number of unique label entries per page.
     """
     
-    row_indices, column_indices = get_layout_from_spec(spec)
+    row_indices, column_indices = get_row_and_column_indices(labeltemplate)
     total_cells = len(row_indices) * len(column_indices)
     return total_cells // copiesperlabel
 

@@ -18,22 +18,23 @@ from file_io import (
 )
 
 from label_format import (
-    generate_blank_docx_template,
+    get_row_and_column_indices,
     get_max_labels_per_page,
     format_labels_single,
     format_labels_multi,
     format_labels_identical,
     format_labels_incremental,
     combine_docs,
-    get_layout_from_spec
 )
 
 from label_spec import LabelSpec
-
+from docx import Document
 
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
-    labeltemplate = generate_blank_docx_template(spec.labeltemplate)
-    row_indices, column_indices = get_layout_from_spec(spec)
+    labeltype = spec.labeltemplate
+    template_path = label_templates[labeltype]["template_path"]
+    labeltemplate = Document(template_path)
+    row_indices, column_indices = get_row_and_column_indices(labeltemplate)
     
     multi_pages = False
     final_doc = None
