@@ -30,8 +30,6 @@ def get_layout_from_spec(spec):
         col_indices.append(j)
         j += 2
 
-    print(col_indices)
-    print(row_indices)
     return row_indices, col_indices
 
 def generate_blank_docx_template(labeltemplate_id):
@@ -169,8 +167,6 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
 
     for i in range(maxrow_verticalfill):
         rows_to_fill = [table.rows[rowindices[i * copiesperlabel + j]].cells for j in range(copiesperlabel)]
-        print("rows to fill")
-        print(rows_to_fill)
         for cind in columnindices:
             if labelcount >= len(datalist):
                 return labelsheet
@@ -309,7 +305,6 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
          Doe, John
          03/29/2025"
     """
-    print("format_label_cell")
     if textboxformatinput:
         label_text = apply_format_to_row(textboxformatinput, data)
         cell.text = label_text
@@ -318,7 +313,6 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
         cell.text = data
     for paragraph in cell.paragraphs:
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        print("323")
         for run in paragraph.runs:
             run.font.size = Pt(int(fontsize))
             run.font.name = fontname
