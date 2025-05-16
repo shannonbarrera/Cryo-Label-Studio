@@ -31,6 +31,7 @@ class PresetEditor(tk.Toplevel):
             ("fontsize", "Font Size"),
             ("outputformat", "Output Format"),
             ("outputfilenameprefix", "Default Output Filename"),
+            ("output_add_date", "Add Date to Filename"),
             ("color_theme", "Color Scheme")
         ]
 
@@ -71,6 +72,14 @@ class PresetEditor(tk.Toplevel):
                 cb.set(self.preset_data.get(key, "Pink"))
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 self.entries[key] = cb
+
+            elif key == "output_add_date":
+                var = tk.BooleanVar()
+                var.set(self.preset_data.get(key, False))
+                cb = tk.Checkbutton(self, variable=var)
+                cb.grid(row=row_counter, column=1, padx=10, pady=4, sticky="w")
+                self.entries[key] = var
+
 
             elif key == "labeltemplate":
                 display_names = list(self.template_display_map.keys())

@@ -5,6 +5,7 @@ from label_spec import LabelSpec
 from main import main
 import json
 import os
+from datetime import datetime
 from label_templates import label_templates
 from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
@@ -186,9 +187,18 @@ class CryoPopLabelStudioLite:
             messagebox.showerror("Error", "No preset loaded.")
             return
 
+        date_str = datetime.now().strftime("%Y-%m-%d")  # e.g. 2025-05-16
+        filename_base = self.current_spec.outputfilenameprefix
+        if self.current_spec.output_add_date == True:
+            date_str = datetime.now().strftime("%Y-%m-%d") 
+            initial_filename = f"{filename_base}_{date_str}"
+        else:
+            initial_filename = filename_base
+
         output_path = filedialog.asksaveasfilename(
             defaultextension=".docx" if spec.outputformat.lower() == "docx" else ".pdf",
-            filetypes=[("Word Document", "*.docx"), ("PDF Document", "*.pdf")]
+            filetypes=[("Word Document", "*.docx"), ("PDF Document", "*.pdf")],
+            initialfile=initial_filename
         )
         if not output_path:
             return

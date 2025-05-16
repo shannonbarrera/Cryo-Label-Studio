@@ -128,23 +128,22 @@ def format_labels_single(datalist, labeltemplate, rowindices, columnindices, cop
     """
     labelsheet = labeltemplate
     table = labelsheet.tables[0]
-    print("131")
+
     labeldata = 0
 
     for rind in rowindices:
         if labeldata >= len(datalist):
             return labelsheet
-        print("137")
+ 
         currentrow = table.rows[rind].cells
-        print("139")
+  
         for cind in columnindices:
-            print(labeldata)
             if labeldata >= len(datalist):
                 return labelsheet
 
             format_label_cell(currentrow[cind], datalist[labeldata], textboxformatinput, fontname, fontsize)
             labeldata += 1
-    print("146")
+
     return labelsheet
 
 
@@ -162,7 +161,7 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
     Returns:
         Document: Word document with formatted multi-copy labels.
     """
-    labelsheet = Document(labeltemplate)
+    labelsheet = labeltemplate
     table = labelsheet.tables[0]
     labelcount = 0
 
@@ -170,6 +169,8 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
 
     for i in range(maxrow_verticalfill):
         rows_to_fill = [table.rows[rowindices[i * copiesperlabel + j]].cells for j in range(copiesperlabel)]
+        print("rows to fill")
+        print(rows_to_fill)
         for cind in columnindices:
             if labelcount >= len(datalist):
                 return labelsheet
@@ -311,10 +312,7 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
     print("format_label_cell")
     if textboxformatinput:
         label_text = apply_format_to_row(textboxformatinput, data)
-        print("314")
-        print(label_text)
         cell.text = label_text
-        print("317")
 
     else: 
         cell.text = data

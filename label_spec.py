@@ -8,6 +8,7 @@ class LabelSpec:
         self.fontname = kwargs.get("fontname")
         self.fontsize = kwargs.get("fontsize")
         self.outputfilenameprefix = kwargs.get("outputfilenameprefix")
+        self.output_add_date = kwargs.get("output_add_date")
         self.outputformat = kwargs.get("outputformat")
         self.truncation_indices = kwargs.get("truncation_indices")
         self.text_box_input = kwargs.get("text_box_input")

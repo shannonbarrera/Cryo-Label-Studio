@@ -89,14 +89,8 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")
 
-    # Determine save location
-    save_path = get_file_path(
-        output_file_path or spec.output_file_path,
-        spec.outputfilenameprefix,
-        spec.outputformat
-    )
-    print(save_path)
-    save_file(save_path, final_doc)
+
+    save_file(output_file_path, final_doc)
 
     
 if __name__ == "__main__":
