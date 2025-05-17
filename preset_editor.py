@@ -153,8 +153,10 @@ class PresetEditor(tk.Toplevel):
             row_counter += 1
 
             tk.Label(self, text="Label Format").grid(row=row_counter, column=0, sticky="nw", padx=10)
-            self.textbox_format = tk.Text(self, width=100, height=8)
+            self.textbox_format = tk.Text(self, width=75, height=8)
             self.textbox_format.grid(row=row_counter, column=1, padx=10)
+            if self.preset_data.get("textboxformatinput"):
+                self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
             row_counter += 1
 
         self.save_button = tk.Button(self, text="Save Preset", command=self.save_preset)
@@ -216,26 +218,23 @@ class PresetEditor(tk.Toplevel):
         display_name = self.entries["labeltemplate"].get()
         internal_name = self.template_display_map.get(display_name)
 
-        try:
-            font_size = int(self.entries["fontsize"].get())
-        except (ValueError, TypeError):
-            font_size = 10
-
         from label_templates import label_templates
         template = label_templates.get(internal_name)
         if not template:
             return
 
-        width_in = template["label_width_in"]
-        height_in = template["label_height_in"]
+        try:
+            font_size = float(self.entries["fontsize"].get())
+        except (ValueError, TypeError):
+            font_size = template.get("default_font_size", 10)
 
-        chars_per_line = int(width_in / (font_size * 0.07))
-        lines_per_label = int(height_in / (font_size * 0.17))
-
-        # Enforce generous minimums
+        chars = template.get("chars_per_line", 45)
+        lines = template.get("lines_per_label", 6)
+        print(chars)
+        print(lines)
         self.textbox_format.config(
-            width=max(45, chars_per_line),
-            height=max(6, lines_per_label)
+            width=max(45, chars),
+            height=max(6, lines)
         )
 
 
@@ -277,7 +276,8 @@ class PresetEditor(tk.Toplevel):
 
 
         if self.textbox_format:
-            preset["textboxformatinput"] = self.textbox_format.get("1.0", tk.END).strip()
+            preset["textboxformatinput"] = self.textbox_format.get("1.0", "end-1c")
+            print(preset["textboxformatinput"])
 
         if not self.preset_path:
             safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")).strip().replace(" ", "_")

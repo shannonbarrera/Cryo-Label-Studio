@@ -141,45 +141,10 @@ class CryoPopLabelStudioLite:
                 lbl.pack(padx=10, pady=15)
                 self.widgets[eid] = lbl
 
-    def build_ui_from_preset(self, spec):
-        self.clear_ui()
 
-        # Label at top: "Cryo Dots – 1.28 x 0.50 (Serial)"
-        label_name = label_templates.get(spec.labeltemplate, {}).get("display_name", spec.labeltemplate)
-        logic_label = getattr(spec, "identical_or_incremental", "Unknown").capitalize()
-        self.template_label = tk.Label(self.root, text=f"{label_name} ({logic_label})", font=("Arial", 12, "bold"))
-        self.template_label.pack(pady=10)
+    
 
-        if spec.presettype == "Text":
-            # Build dynamic text input box
-            template = label_templates.get(spec.labeltemplate, {})
-            width_in = template.get("label_width_in", 1.0)
-            height_in = template.get("label_height_in", 0.5)
-            font_size = int(getattr(spec, "fontsize", 10))
-
-            chars = int(width_in / (font_size * 0.07))
-            lines = int(height_in / (font_size * 0.17))
-
-            self.text_entry = tk.Text(self.root, width=max(40, chars), height=max(4, lines), font=(spec.fontname, font_size))
-            self.text_entry.pack(padx=10, pady=5)
-
-            # Optional row selectors if partial sheet is enabled
-            if getattr(spec, "partialsheet", False):
-                self.row_start_var = tk.StringVar(value="0")
-                self.row_end_var = tk.StringVar(value="10")
-                tk.Label(self.root, text="Start Row").pack()
-                tk.Entry(self.root, textvariable=self.row_start_var).pack()
-                tk.Label(self.root, text="End Row").pack()
-                tk.Entry(self.root, textvariable=self.row_end_var).pack()
-
-            # Save file button
-            self.save_button = tk.Button(self.root, text="Save Labels", command=self.save_labels)
-            self.save_button.pack(pady=10)
-
-        elif spec.presettype == "File":
-            # TODO: build File Input UI next
-            pass
-
+    
     def generate_labels(self):
         spec = self.current_spec
 
@@ -217,7 +182,7 @@ class CryoPopLabelStudioLite:
                     return
                 main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
 
-            messagebox.showinfo("Success", f"Labels saved to:\n{output_path}")
+            os.startfile(output_path)
         except Exception as e:
             messagebox.showerror("Error", f"Label generation failed:\n{e}")
 

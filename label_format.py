@@ -234,6 +234,7 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
         label_text = apply_format_to_row(textboxformatinput, data)
         cell.text = label_text
 
+
     else: 
         cell.text = data
     for paragraph in cell.paragraphs:
@@ -268,7 +269,6 @@ def apply_format_to_row(textboxformatinput, row_data):
         if isinstance(value, datetime):
             value = value.strftime('%m-%d-%Y')
         placeholder_to_value[key] = str(value)
-
     try:
         return textboxformatinput.format(**placeholder_to_value)
     except KeyError:
