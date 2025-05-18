@@ -45,7 +45,8 @@ class PresetEditor(tk.Toplevel):
 
 
         if self.preset_type == "Text":
-            fields.insert(2, ("logic", "Logic")) 
+            fields.insert(2, ("identical_or_incremental", "Logic"))
+
    
             fields = [f for f in fields if f[0] != "copiesperlabel"]
 
@@ -94,7 +95,7 @@ class PresetEditor(tk.Toplevel):
                 self.entries[key] = cb
 
 
-            elif key == "logic":
+            elif key == "identical_or_incremental":
                 cb = ttk.Combobox(self, values=["Identical", "Serial"], state="readonly")
                 cb.set(self.preset_data.get(key, "Identical"))
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
@@ -203,7 +204,7 @@ class PresetEditor(tk.Toplevel):
 
 
     def toggle_labels_per_serial(self, event=None):
-        if self.entries["logic"].get() == "Serial":
+        if self.entries["identical_or_incremental"].get() == "Serial":
             self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
             self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
         else:
@@ -237,7 +238,7 @@ class PresetEditor(tk.Toplevel):
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
-        if self.preset_type == "Text" and self.entries.get("logic", "").get() == "Serial":
+        if self.preset_type == "Text" and self.entries.get("identical_or_incremental", "").get() == "Serial":
             preset["labels_perserial"] = self.labels_per_serial_dropdown.get()
 
         for key, widget in self.entries.items():

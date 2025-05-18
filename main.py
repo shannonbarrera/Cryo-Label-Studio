@@ -19,7 +19,12 @@ from file_io import (
 
 from label_format import (
     get_row_and_column_indices,
+    get_first_page_row_indices,
+    get_first_page_col_indices,
     get_max_labels_per_page,
+    get_max_labels_first_page,
+    paginate_labels,
+    format_labels_firstpage_fromfile,
     format_labels_single,
     format_labels_multi,
     format_labels_identical,
@@ -31,15 +36,25 @@ from label_spec import LabelSpec
 from docx import Document
 
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
-    labeltype = spec.labeltemplate
-    template_path = label_templates[labeltype]["template_path"]
-    labeltemplate = Document(template_path)
-    row_indices, column_indices = get_row_and_column_indices(labeltemplate)
-    print(row_indices)
-    
+    template_meta = label_templates[spec.labeltemplate]
+
+    labeltemplate = Document(template_meta["template_path"])
+    table_format = template_meta["table_format"]
+    start_row = getattr(spec, "row_start", 1)
+    end_row = getattr(spec, "row_end", template_meta.get("labels_down", 99))
+    start_col = getattr(spec, "col_start", 1)
+    end_col = getattr(spec, "col_end", template_meta.get("labels_across", 99))
+    print(1)
+
+    row_indices, column_indices = get_row_and_column_indices(labeltemplate, table_format)
+    print(2)
+
+    first_page_row_indices = get_first_page_row_indices(start_row, end_row, row_indices)
+    first_page_first_row_col_indices, first_page_last_row_col_indices = get_first_page_col_indices(start_col, end_col, column_indices)
+
     multi_pages = False
     final_doc = None
-
+    print(3)
     if spec.presettype == "File":
         # Load data from file based on extension
         if input_file_path.lower().endswith(".csv"):
@@ -53,20 +68,23 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
         if spec.truncation_indices:
             data_list = truncate_data(data_list, spec.truncation_indices)
         
+
+
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
-        max_labels_per_page = get_max_labels_per_page(spec, labeltemplate, spec.copiesperlabel)
-        pages = [
-            data_list[i : i + max_labels_per_page]
-            for i in range(0, len(data_list), max_labels_per_page)
-        ]
-
-        final_doc = format_function(pages[0], labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
-
+        max_labels_per_page = get_max_labels_per_page(spec, labeltemplate, table_format)
+        print(max_labels_per_page)
+        first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
+        first_page, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel)
+        pages = [first_page]
+        print(pages)
+        pages = pages + otherpages
+        print("about to format")
+        final_doc = format_labels_firstpage_fromfile(pages[0], labeltemplate, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
         for page in pages[1:]:
-            next_doc = format_function(page, labeltemplate, row_indices, column_indices, spec.copiesperlabel, spec.textboxformatinput, spec.fontname, spec.fontsize)
+            next_doc = format_labels_single(page, labeltemplate, row_indices, column_indices, spec)
             final_doc = combine_docs(final_doc, next_doc)
 
-
+        print("formatted")
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
         if logic == "identical":

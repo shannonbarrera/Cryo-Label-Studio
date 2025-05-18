@@ -19,3 +19,4 @@ def truncate_data(data_list, truncation_indices):
             target_str = new_data[i][0]
         new_data[i][cell_index]= target_str[start_idx:end_idx]
     return new_data
+

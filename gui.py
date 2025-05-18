@@ -141,27 +141,38 @@ class CryoPopLabelStudioLite:
                 lbl.pack(padx=10, pady=15)
                 self.widgets[eid] = lbl
 
-        # ✅ Insert Row Selector Dropdowns (only once)
         if self.current_spec and getattr(self.current_spec, "partialsheet", False):
-            # Get internal template ID from preset
             template_id = self.current_spec.labeltemplate
             template = label_templates.get(template_id, {})
-            labels_down = template.get("labels_down", 99)  # fallback to 99 if missing
-
-            row_selector_frame = tk.Frame(self.body_frame)
-            row_selector_frame.pack(pady=5)
+            labels_down = template.get("labels_down", 99)
+            labels_across = template.get("labels_across", 99)
 
             row_range = [str(i) for i in range(1, labels_down + 1)]
+            col_range = [str(j) for j in range(1, labels_across + 1)]
 
-            tk.Label(row_selector_frame, text="Start Row:").pack(side=tk.LEFT)
+            # First Label Row & Column (top line)
+            first_row_frame = tk.Frame(self.body_frame)
+            first_row_frame.pack(pady=5)
+
+            tk.Label(first_row_frame, text="First Label Row:").pack(side=tk.LEFT)
             self.row_start_var = tk.StringVar(value="1")
-            start_dropdown = ttk.Combobox(row_selector_frame, textvariable=self.row_start_var, values=row_range, width=5)
-            start_dropdown.pack(side=tk.LEFT, padx=5)
+            ttk.Combobox(first_row_frame, textvariable=self.row_start_var, values=row_range, width=5).pack(side=tk.LEFT, padx=5)
 
-            tk.Label(row_selector_frame, text="End Row:").pack(side=tk.LEFT)
+            tk.Label(first_row_frame, text="Column:").pack(side=tk.LEFT)
+            self.col_start_var = tk.StringVar(value="1")
+            ttk.Combobox(first_row_frame, textvariable=self.col_start_var, values=col_range, width=5).pack(side=tk.LEFT, padx=5)
+
+            # Last Label Row & Column (bottom line)
+            last_row_frame = tk.Frame(self.body_frame)
+            last_row_frame.pack(pady=5)
+
+            tk.Label(last_row_frame, text="Last Label Row:").pack(side=tk.LEFT)
             self.row_end_var = tk.StringVar(value=str(labels_down))
-            end_dropdown = ttk.Combobox(row_selector_frame, textvariable=self.row_end_var, values=row_range, width=5)
-            end_dropdown.pack(side=tk.LEFT, padx=5)
+            ttk.Combobox(last_row_frame, textvariable=self.row_end_var, values=row_range, width=5).pack(side=tk.LEFT, padx=5)
+
+            tk.Label(last_row_frame, text="Column:").pack(side=tk.LEFT)
+            self.col_end_var = tk.StringVar(value=str(labels_across))
+            ttk.Combobox(last_row_frame, textvariable=self.col_end_var, values=col_range, width=5).pack(side=tk.LEFT, padx=5)
 
         # ✅ Group buttons horizontally in a row
         btn_row = tk.Frame(self.body_frame)
@@ -205,13 +216,23 @@ class CryoPopLabelStudioLite:
         if not output_path:
             return
 
+        if hasattr(self, "row_start_var"):
+            spec.row_start = int(self.row_start_var.get())
+        if hasattr(self, "row_end_var"):
+            spec.row_end = int(self.row_end_var.get())
+        if hasattr(self, "col_start_var"):
+            spec.col_start = int(self.col_start_var.get())
+        if hasattr(self, "col_end_var"):
+            spec.col_end = int(self.col_end_var.get())
+
+
         try:
             if spec.presettype == "Text":
                 text = self.widgets["user_input"].get("1.0", "end").strip()
-                print(text)
                 if spec.identical_or_incremental.lower() == "serial" and not text.isnumeric():
                     messagebox.showerror("Error", "Serial format must be a number.")
                     return
+
                 main(spec, text_box_input=text, output_file_path=output_path)
 
             elif spec.presettype == "File":

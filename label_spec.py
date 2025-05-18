@@ -17,4 +17,9 @@ class LabelSpec:
         self.color_theme = kwargs.get("color_theme")
         self.ui_layout = kwargs.get("ui_layout", {})
         self.partialsheet = kwargs.get("partialsheet")
+        self.row_start = kwargs.get("row_start")
+        self.row_end = kwargs.get("row_end")
+        self.col_start = kwargs.get("col_start")
+        self.col_end = kwargs.get("col_end")
+
 
