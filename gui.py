@@ -17,6 +17,12 @@ class CryoPopLabelStudioLite:
         self.root = root
         self.root.title("CryoPop Label Studio Lite")
         self.root.geometry("600x500")
+        self.top_frame = tk.Frame(self.root)
+        self.top_frame.pack(fill=tk.X)
+
+        self.body_frame = tk.Frame(self.root)
+        self.body_frame.pack(fill=tk.BOTH, expand=True)
+
 
         self.current_spec = None
         self.presets_dir = "presets"
@@ -29,24 +35,24 @@ class CryoPopLabelStudioLite:
 
 
     def setup_menu(self):
-        menubar = tk.Menu(self.root)
-        self.root.config(menu=menubar)
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
 
-        preset_menu = tk.Menu(menubar, tearoff=0)
+        preset_menu = tk.Menu(self.menu_bar, tearoff=0)
         preset_menu.add_command(label="New File Input Preset", command=lambda: self.new_preset_window("File"))
         preset_menu.add_command(label="New Text Input Preset", command=lambda: self.new_preset_window("Text"))
         preset_menu.add_separator()
         preset_menu.add_command(label="Edit Presets", command=self.edit_presets_window)
-        menubar.add_cascade(label="Presets", menu=preset_menu)
+        self.menu_bar.add_cascade(label="Presets", menu=preset_menu)
 
     def setup_main_ui(self):
-        tk.Label(self.root, text="Select a Preset:", font=("Arial", 12)).pack(pady=(20, 5))
+        tk.Label(self.top_frame, text="Select a Preset:", font=("Arial", 12)).pack(pady=(20, 5))
         self.preset_var = tk.StringVar()
-        self.preset_dropdown = ttk.Combobox(self.root, textvariable=self.preset_var, state="readonly")
+        self.preset_dropdown = ttk.Combobox(self.top_frame, textvariable=self.preset_var, state="readonly")
         self.preset_dropdown.pack(pady=5)
         self.preset_dropdown.bind("<<ComboboxSelected>>", self.load_selected_preset)
 
-        self.status_label = tk.Label(self.root, text="", font=("Arial", 10))
+        self.status_label = tk.Label(self.top_frame, text="", font=("Arial", 10))
         self.status_label.pack(pady=10)
 
 
@@ -116,38 +122,69 @@ class CryoPopLabelStudioLite:
             eid = element["id"]
 
             if etype == "textbox":
+                template_id = self.current_spec.labeltemplate
+                template = label_templates.get(template_id, {})
+                box_width = template.get("chars_per_line", 45)
+                box_height = template.get("lines_per_label", 6)
 
-                entry = tk.Entry(self.root)
-                entry.pack()
-                self.widgets[eid] = entry
-
-            elif etype == "button":
-                if eid == "generate":
-                    btn = tk.Button(self.root, text=element["label"], command=self.generate_labels)
-                elif eid == "upload_file":
-                    btn = tk.Button(self.root, text=element["label"], command=self.upload_sample_file)
-                else:
-                    btn = tk.Button(self.root, text=element["label"])
-                btn.pack(padx=10, pady=15)
-                self.widgets[eid] = btn
+                text_box = tk.Text(self.body_frame, width=box_width, height=box_height)
+                text_box.pack()
+                self.widgets[eid] = text_box
 
             elif etype == "textpreview":
-                txt = tk.Text(self.root, height=10, width=50)
+                txt = tk.Text(self.body_frame, height=10, width=50)
                 txt.pack(padx=10, pady=15)
                 self.widgets[eid] = txt
 
             elif etype == "label":
-                lbl = tk.Label(self.root, text=element.get("text", ""))
+                lbl = tk.Label(self.body_frame, text=element.get("text", ""))
                 lbl.pack(padx=10, pady=15)
                 self.widgets[eid] = lbl
 
+        # ✅ Insert Row Selector Dropdowns (only once)
+        if self.current_spec and getattr(self.current_spec, "partialsheet", False):
+            # Get internal template ID from preset
+            template_id = self.current_spec.labeltemplate
+            template = label_templates.get(template_id, {})
+            labels_down = template.get("labels_down", 99)  # fallback to 99 if missing
 
-    
+            row_selector_frame = tk.Frame(self.body_frame)
+            row_selector_frame.pack(pady=5)
+
+            row_range = [str(i) for i in range(1, labels_down + 1)]
+
+            tk.Label(row_selector_frame, text="Start Row:").pack(side=tk.LEFT)
+            self.row_start_var = tk.StringVar(value="1")
+            start_dropdown = ttk.Combobox(row_selector_frame, textvariable=self.row_start_var, values=row_range, width=5)
+            start_dropdown.pack(side=tk.LEFT, padx=5)
+
+            tk.Label(row_selector_frame, text="End Row:").pack(side=tk.LEFT)
+            self.row_end_var = tk.StringVar(value=str(labels_down))
+            end_dropdown = ttk.Combobox(row_selector_frame, textvariable=self.row_end_var, values=row_range, width=5)
+            end_dropdown.pack(side=tk.LEFT, padx=5)
+
+        # ✅ Group buttons horizontally in a row
+        btn_row = tk.Frame(self.body_frame)
+        btn_row.pack(pady=15)
+
+        for element in layout_data.get("elements", []):
+            if element["type"] == "button":
+                eid = element["id"]
+                label = element["label"]
+
+                if eid == "generate":
+                    btn = tk.Button(btn_row, text=label, command=self.generate_labels)
+                elif eid == "upload_file":
+                    btn = tk.Button(btn_row, text=label, command=self.upload_sample_file)
+                else:
+                    btn = tk.Button(btn_row, text=label)
+
+                btn.pack(side=tk.LEFT, padx=10)
+                self.widgets[eid] = btn
 
     
     def generate_labels(self):
         spec = self.current_spec
-
         if not spec:
             messagebox.showerror("Error", "No preset loaded.")
             return
@@ -171,6 +208,7 @@ class CryoPopLabelStudioLite:
         try:
             if spec.presettype == "Text":
                 text = self.widgets["user_input"].get("1.0", "end").strip()
+                print(text)
                 if spec.identical_or_incremental.lower() == "serial" and not text.isnumeric():
                     messagebox.showerror("Error", "Serial format must be a number.")
                     return
@@ -210,6 +248,9 @@ class CryoPopLabelStudioLite:
 
 
     def clear_ui(self):
+        for widget in self.root.winfo_children():
+            for widget in self.body_frame.winfo_children():
+                widget.destroy()
         for widget in self.widgets.values():
             try:
                 widget.destroy()
@@ -243,12 +284,22 @@ class CryoPopLabelStudioLite:
             selected = lb.curselection()
             if not selected:
                 return
-            name = lb.get(selected[0])
-            path, _ = self.presets[name]
-            os.remove(path)
-            messagebox.showinfo("Deleted", f"Deleted preset: {name}")
+            
+            if len(selected) > 1:
+                confirm = messagebox.askyesno("Confirm Delete", f"Delete {len(selected)} presets?")
+                if not confirm:
+                    return
+
+
+            for i in selected:
+                name = lb.get(i)
+                path, _ = self.presets[name]
+                os.remove(path)
+                messagebox.showinfo("Deleted", f"Deleted preset: {name}")
+
             win.destroy()
             self.load_all_presets()
+
 
         btn_frame = tk.Frame(win)
         btn_frame.pack(pady=5)

@@ -35,6 +35,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     template_path = label_templates[labeltype]["template_path"]
     labeltemplate = Document(template_path)
     row_indices, column_indices = get_row_and_column_indices(labeltemplate)
+    print(row_indices)
     
     multi_pages = False
     final_doc = None

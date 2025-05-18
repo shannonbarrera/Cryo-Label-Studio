@@ -32,6 +32,7 @@ class PresetEditor(tk.Toplevel):
             ("outputformat", "Output Format"),
             ("outputfilenameprefix", "Default Output Filename"),
             ("output_add_date", "Add Date to Filename"),
+            ("partialsheet", "Partial Sheet Selection"),
             ("color_theme", "Color Scheme")
         ]
 
@@ -43,9 +44,7 @@ class PresetEditor(tk.Toplevel):
         }
 
 
-        if self.preset_type == "File":
-            fields.append(("partialsheet", "Partial Sheet Selection"))
-        elif self.preset_type == "Text":
+        if self.preset_type == "Text":
             fields.insert(2, ("logic", "Logic")) 
    
             fields = [f for f in fields if f[0] != "copiesperlabel"]
@@ -230,8 +229,6 @@ class PresetEditor(tk.Toplevel):
 
         chars = template.get("chars_per_line", 45)
         lines = template.get("lines_per_label", 6)
-        print(chars)
-        print(lines)
         self.textbox_format.config(
             width=max(45, chars),
             height=max(6, lines)
@@ -268,8 +265,8 @@ class PresetEditor(tk.Toplevel):
         elif self.preset_type == "File":
             preset["ui_layout"] = {
                 "elements": [
-                    {"type": "button", "id": "upload_file", "label": "Load File"},
                     {"type": "textpreview", "id": "preview_area"},
+                    {"type": "button", "id": "upload_file", "label": "Load File"},
                     {"type": "button", "id": "generate", "label": "Save Labels"},
                 ]
             }

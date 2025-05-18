@@ -16,4 +16,5 @@ class LabelSpec:
         self.labels_perserial = kwargs.get("labels_perserial")
         self.color_theme = kwargs.get("color_theme")
         self.ui_layout = kwargs.get("ui_layout", {})
+        self.partialsheet = kwargs.get("partialsheet")
 
