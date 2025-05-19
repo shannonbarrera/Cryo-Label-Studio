@@ -214,13 +214,17 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
             for i in range(copiesperlabel):
                 firstpage.append(item)
         if len(firstpage) > first_page_max_labels:
-            hangover = [firstpage[first_page_max_labels:]]
+            print("okay")
+            hangover = firstpage[first_page_max_labels:]
+            firstpage = firstpage[:first_page_max_labels]
         else:
             hangover = []
-        firstpage = firstpage[:first_page_max_labels]
+        
+        print("hangover")
         print(hangover)
+        print("data_list_rem")
         print(data_list[first_page_max_data:])
-        remaining = [hangover] 
+        remaining = hangover + [firstpage[first_page_max_data:]]
         for item in data_list[first_page_max_data:]:
             remaining.append(item)
         pages = []
