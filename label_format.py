@@ -186,7 +186,7 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
     '''
 def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copiesperlabel):
     total_labels = len(data_list) * copiesperlabel
-
+    print(first_page_max_labels)
     if first_page_max_labels > len(data_list) * copiesperlabel:
         num_pages = 1
         firstpage = []
