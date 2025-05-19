@@ -9,10 +9,12 @@ from docx.enum.section import WD_SECTION_START
 from datetime import datetime
 from label_templates import label_templates
 from docx.oxml.ns import qn
+from docxcompose.composer import Composer
 import math
 
 
-def get_row_and_column_indices(labelsheet, table_format):
+def get_row_and_column_indices(templatepath, table_format):
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
     if table_format == "checkerboard":
         row_indices = [i for i in range(len(table.rows)) if i % 2 == 0]
@@ -45,7 +47,7 @@ def get_first_page_col_indices(start_col, end_col, col_indices):
     
 
 
-def get_max_labels_per_page(spec, labeltemplate, table_format):
+def get_max_labels_per_page(spec, templatepath, table_format):
     """
     Calculates how many label entries can fit per page.
 
@@ -58,7 +60,7 @@ def get_max_labels_per_page(spec, labeltemplate, table_format):
         int: Maximum number of unique label entries per page.
     """
 
-    row_indices, column_indices = get_row_and_column_indices(labeltemplate, table_format)
+    row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
     total_cells = len(row_indices) * len(column_indices)
     return total_cells 
 
@@ -216,7 +218,11 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
         else:
             hangover = []
         firstpage = firstpage[:first_page_max_labels]
-        remaining = hangover + data_list[first_page_max_data:]
+        print(hangover)
+        print(data_list[first_page_max_data:])
+        remaining = [hangover] 
+        for item in data_list[first_page_max_data:]:
+            remaining.append(item)
         pages = []
         remainingindex = 0
         page = []
@@ -241,7 +247,7 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
             remainingindex = 0
     return firstpage, pages
 
-def format_labels_single(datalist, labeltemplate, rowindices, columnindices, spec):
+def format_labels_single(datalist, templatepath, rowindices, columnindices, spec):
     """
     Fills a label template with one label per entry.
 
@@ -255,13 +261,14 @@ def format_labels_single(datalist, labeltemplate, rowindices, columnindices, spe
     Returns:
         Document: Word document with formatted labels.
     """
-    labelsheet = labeltemplate
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
     copiesperlabel = spec.copiesperlabel
     textboxformatinput = spec.textboxformatinput
     fontname = spec.fontname
     fontsize = spec.fontsize
     labeldata = 0
+    print(labelsheet)
 
     for rind in rowindices:
         if labeldata >= len(datalist):
@@ -281,8 +288,8 @@ def format_labels_single(datalist, labeltemplate, rowindices, columnindices, spe
 
 
 
-def format_labels_firstpage_fromfile(data_list, labeltemplate, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec):
-    labelsheet = labeltemplate
+def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec):
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
     textboxformatinput = spec.textboxformatinput
     fontname = spec.fontname
@@ -321,8 +328,8 @@ def format_labels_firstpage_fromfile(data_list, labeltemplate, first_page_row_in
     
 
 
-def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copiesperlabel, textboxformatinput, fontname, fontsize):
-    labelsheet = labeltemplate
+def format_labels_multi(datalist, templatepath, rowindices, columnindices, copiesperlabel, textboxformatinput, fontname, fontsize):
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
     labelcount = 0
     maxrow_verticalfill = len(rowindices) // copiesperlabel
@@ -360,7 +367,7 @@ def format_labels_multi(datalist, labeltemplate, rowindices, columnindices, copi
     return labelsheet
 
 
-def format_labels_identical(text_box_input, labeltemplate, row_indices, column_indices, fontname, fontsize):
+def format_labels_identical(text_box_input, templatepath, row_indices, column_indices, fontname, fontsize):
     """
     Formats the entire label sheet for a given text input and applies the label template formatting.
 
@@ -371,7 +378,7 @@ def format_labels_identical(text_box_input, labeltemplate, row_indices, column_i
     Returns:
         Document: A `docx.Document` object with the populated label data.
     """
-    labelsheet = Document(labeltemplate)
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
 
     for rind in row_indices:
@@ -384,7 +391,7 @@ def format_labels_identical(text_box_input, labeltemplate, row_indices, column_i
     return labelsheet
 
 
-def format_labels_incremental(text_box_input, labeltemplate, row_indices, column_indices, fontname, fontsize):
+def format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, fontname, fontsize):
     """
     Populates and formats the text in the table in the specified label sheet with the sequential numbers starting from 
     the given starting number.
@@ -397,7 +404,7 @@ def format_labels_incremental(text_box_input, labeltemplate, row_indices, column
     Returns:
         Document: The modified Word document with the filled labels.
     """
-    labelsheet = Document(labeltemplate)
+    labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
     # Check if number is numeric or has a prefix or nonalphanumeric character
     delimiter = None
@@ -523,7 +530,6 @@ def combine_docs(doc1, doc2):
         Document: Combined document.
     """
     print("called combine_docs")
-    for element in doc2.element.body:
-        doc1.element.body.append(copy.deepcopy(element))
-    print("combined")
-    return doc1
+    composer = Composer(doc1)
+    composer.append(doc2)
+    return composer.doc

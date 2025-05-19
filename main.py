@@ -37,16 +37,18 @@ from docx import Document
 
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
     template_meta = label_templates[spec.labeltemplate]
-
-    labeltemplate = Document(template_meta["template_path"])
+    templatepath = template_meta["template_path"]
+    labeltemplateexample = Document(templatepath)
+    print("lte")
     table_format = template_meta["table_format"]
     start_row = getattr(spec, "row_start", 1)
     end_row = getattr(spec, "row_end", template_meta.get("labels_down", 99))
     start_col = getattr(spec, "col_start", 1)
     end_col = getattr(spec, "col_end", template_meta.get("labels_across", 99))
-    print(1)
+    print("yes")
 
-    row_indices, column_indices = get_row_and_column_indices(labeltemplate, table_format)
+
+    row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
     print(2)
 
     first_page_row_indices = get_first_page_row_indices(start_row, end_row, row_indices)
@@ -71,17 +73,18 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
 
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
-        max_labels_per_page = get_max_labels_per_page(spec, labeltemplate, table_format)
+        max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
         print(max_labels_per_page)
         first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
         first_page, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel)
         pages = [first_page]
         print(pages)
         pages = pages + otherpages
+        print(pages)
         print("about to format")
-        final_doc = format_labels_firstpage_fromfile(pages[0], labeltemplate, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
+        final_doc = format_labels_firstpage_fromfile(pages[0], templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
         for page in pages[1:]:
-            next_doc = format_labels_single(page, labeltemplate, row_indices, column_indices, spec)
+            next_doc = format_labels_single(page, templatepath, row_indices, column_indices, spec)
             print("next_doc")
             final_doc = combine_docs(final_doc, next_doc)
             print("final_doc")
@@ -90,9 +93,9 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
         if logic == "identical":
-            final_doc = format_labels_identical(text_box_input, labeltemplate, row_indices, column_indices, spec.fontname, spec.fontsize)
+            final_doc = format_labels_identical(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
         elif logic == "incremental":
-            final_doc = format_labels_incremental(text_box_input, labeltemplate, row_indices, column_indices, spec.fontname, spec.fontsize)
+            final_doc = format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
         elif logic == "serial":
             try:
                 count = int(spec.labels_perserial)
@@ -105,7 +108,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
                 for _ in range(count):
                     label = spec.textboxformatinput.replace("{serial}", serial)
                     labels.append(label)
-            final_doc = format_labels_identical("\\n".join(labels), labeltemplate, row_indices, column_indices, spec.fontname, spec.fontsize)
+            final_doc = format_labels_identical("\\n".join(labels), templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
 
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")
