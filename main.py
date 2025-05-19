@@ -39,24 +39,22 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     template_meta = label_templates[spec.labeltemplate]
     templatepath = template_meta["template_path"]
     labeltemplateexample = Document(templatepath)
-    print("lte")
     table_format = template_meta["table_format"]
     start_row = getattr(spec, "row_start", 1)
     end_row = getattr(spec, "row_end", template_meta.get("labels_down", 99))
     start_col = getattr(spec, "col_start", 1)
     end_col = getattr(spec, "col_end", template_meta.get("labels_across", 99))
-    print("yes")
 
 
     row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
-    print(2)
 
     first_page_row_indices = get_first_page_row_indices(start_row, end_row, row_indices)
+    print(first_page_row_indices)
     first_page_first_row_col_indices, first_page_last_row_col_indices = get_first_page_col_indices(start_col, end_col, column_indices)
 
     multi_pages = False
     final_doc = None
-    print(3)
+
     if spec.presettype == "File":
         # Load data from file based on extension
         if input_file_path.lower().endswith(".csv"):
@@ -74,7 +72,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
-        print(max_labels_per_page)
+
         first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
         first_page, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel)
         pages = [first_page]
@@ -91,8 +89,9 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
         print("formatted")
     elif spec.presettype == "Text":
-        logic = spec.identical_or_incremental
+
         if logic == "identical":
+            get_data_list_fromtext(text_box_input, logic)
             final_doc = format_labels_identical(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
         elif logic == "incremental":
             final_doc = format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)

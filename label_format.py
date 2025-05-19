@@ -222,6 +222,7 @@ def format_labels_single(datalist, templatepath, rowindices, columnindices, spec
     fontsize = spec.fontsize
     labeldata = 0
     print(labelsheet)
+    print("fls")
 
     for rind in rowindices:
         if labeldata >= len(datalist):
