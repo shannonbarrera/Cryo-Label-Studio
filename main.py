@@ -82,7 +82,9 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
         final_doc = format_labels_firstpage_fromfile(pages[0], labeltemplate, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
         for page in pages[1:]:
             next_doc = format_labels_single(page, labeltemplate, row_indices, column_indices, spec)
+            print("next_doc")
             final_doc = combine_docs(final_doc, next_doc)
+            print("final_doc")
 
         print("formatted")
     elif spec.presettype == "Text":

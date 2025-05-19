@@ -1,5 +1,6 @@
 import sys
 import re
+import copy
 from docx.oxml import OxmlElement
 from docx import Document
 from docx.shared import Pt, Inches
@@ -266,13 +267,14 @@ def format_labels_single(datalist, labeltemplate, rowindices, columnindices, spe
         if labeldata >= len(datalist):
             return labelsheet
  
-        currentrow = table.rows[rind].cells
+        
   
         for cind in columnindices:
             if labeldata >= len(datalist):
+                print("returned")
                 return labelsheet
-
-            format_label_cell(currentrow[cind], datalist[labeldata], textboxformatinput, fontname, fontsize)
+            print(datalist[labeldata])
+            format_label_cell(table.rows[rind].cells[cind], datalist[labeldata], textboxformatinput, fontname, fontsize)
             labeldata += 1
     print("done")
     return labelsheet
@@ -305,7 +307,7 @@ def format_labels_firstpage_fromfile(data_list, labeltemplate, first_page_row_in
         for cind in column_indices:
             if labelcount >= len(data_list):
                 return labelsheet
-            format_label_cell(current_row[cind], datalist[labelcount], textboxformatinput, fontname, fontsize)
+            format_label_cell(current_row.cells[cind], data_list[labelcount], textboxformatinput, fontname, fontsize)
             labelcount += 1
 
         for cind in first_page_last_row_col_indices:
@@ -520,6 +522,8 @@ def combine_docs(doc1, doc2):
     Returns:
         Document: Combined document.
     """
+    print("called combine_docs")
     for element in doc2.element.body:
-        doc1.element.body.append(element)
+        doc1.element.body.append(copy.deepcopy(element))
+    print("combined")
     return doc1
