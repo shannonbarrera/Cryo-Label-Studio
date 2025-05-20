@@ -77,10 +77,12 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
         first_page, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel)
         pages = [first_page]
         print(pages)
+        print(otherpages)
         pages = pages + otherpages
         print(pages)
         print("about to format")
         final_doc = format_labels_firstpage_fromfile(pages[0], templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
+        print("first page done")
         for page in pages[1:]:
             next_doc = format_labels_single(page, templatepath, row_indices, column_indices, spec)
             print("next_doc")

@@ -88,18 +88,20 @@ def get_max_labels_first_page(first_page_row_indices, column_indices, first_page
 def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copiesperlabel):
     total_labels = len(data_list) * copiesperlabel
 
-    if first_page_max_labels > len(data_list) * copiesperlabel:
+    if first_page_max_labels > total_labels:
         num_pages = 1
         firstpage = []
         pages = []
-        remainder = 0
+        copycount = 0
         data_count = 0
-        while len(firstpage) < len(data_list):
+        for i in range(total_labels):
             for i in range(copiesperlabel):
                 firstpage.append(data_list[data_count])
-                remainder = copiesperlabel - (i + 1)
-                if remainder == 0:
+                copycount += 1
+                if copycount == copiesperlabel:
                     data_count += 1
+                    copycount = 0
+    
   
 
     else:
@@ -115,35 +117,32 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
             for i in range(copiesperlabel):
                 firstpage.append(item)
         if len(firstpage) > first_page_max_labels:
-            hangover = [firstpage[first_page_max_labels:]]
+            hangover = firstpage[first_page_max_labels:]
         else:
             hangover = []
         firstpage = firstpage[:first_page_max_labels]
-        remaining = hangover + data_list[first_page_max_data:]
+        remaining = data_list[first_page_max_data:]
         pages = []
         remainingindex = 0
         page = []
         for i in range(1, num_pages):
             if remainingindex == 0:
-                if len(hangover) == 0:
-                    page = []
-                else:
-                    page = remaining[0]
-                remainingindex += 1
+                page = hangover
             remaining_labels_on_page = max_labels_per_page - len(page)
             remaining_data_items_on_page = math.ceil(remaining_labels_on_page / copiesperlabel)
             for item in remaining[remainingindex : remaining_data_items_on_page]:
-                remainingindex += 1
                 for i in range(copiesperlabel):
                     page.append(item)
-            if remaining_labels_on_page > 0:
-                hangover = page[remaining_labels_on_page:]
+                remainingindex += 1
+            
+            if len(page) > max_labels_per_page:
+                hangover = page[max_labels_per_page:]
             else:
                 hangover = []
-            page = page[:remaining_labels_on_page]
+            page = page[:max_labels_per_page]
             pages.append(page)
-            remainingindex = 0
-            remaining = hangover + remaining[remainingindex:]
+
+            remaining = remaining[remainingindex:]
             remainingindex = 0
     return firstpage, pages
 
@@ -213,7 +212,7 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
 
     if len(first_page_row_indices) > 2:
         middle_rows = first_page_row_indices[1:-1]
-        last_row = first_page_row_indices[:-1]
+        last_row = first_page_row_indices[-1]
 
     labelcount = 0
     for cind in first_page_first_row_col_indices:
@@ -233,7 +232,7 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
                     return labelsheet
                 format_label_cell(current_row.cells[cind], data_list[labelcount], textboxformatinput, fontname, fontsize)
                 labelcount += 1
-    if first_page_last_row_col_indices != None:
+    if last_row != None:
         for cind in first_page_last_row_col_indices:
             if labelcount >= len(data_list):
                 return labelsheet
