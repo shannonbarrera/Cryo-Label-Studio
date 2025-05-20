@@ -50,7 +50,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
     first_page_row_indices = get_first_page_row_indices(start_row, end_row, row_indices)
     print(first_page_row_indices)
-    first_page_first_row_col_indices, first_page_last_row_col_indices = get_first_page_col_indices(start_col, end_col, column_indices)
+    first_page_first_row_col_indices, first_page_last_row_col_indices = get_first_page_col_indices(start_col, end_col, start_row, end_row, column_indices)
 
     multi_pages = False
     final_doc = None

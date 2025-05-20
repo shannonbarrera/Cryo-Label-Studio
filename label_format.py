@@ -34,15 +34,15 @@ def get_first_page_row_indices(start_row, end_row, row_indices):
     print(first_page_row_indices)
     return first_page_row_indices
 
-def get_first_page_col_indices(start_col, end_col, col_indices):
+def get_first_page_col_indices(start_col, end_col, start_row, end_row, col_indices):
     first_page_first_row_col_indices = []
     first_page_last_row_col_indices = []
-    if end_col - start_col == 0:
+    if end_row - start_row == 0:
         for i in range(len(col_indices)):
             if i >= start_col-1 and i <= end_col -1:
                 first_page_first_row_col_indices.append(col_indices[i])
         return first_page_first_row_col_indices, first_page_last_row_col_indices
-
+    print(start_col)
     for i in range(len(col_indices)):
         if i >= start_col-1:
             first_page_first_row_col_indices.append(col_indices[i])
@@ -86,118 +86,69 @@ def get_max_labels_first_page(first_page_row_indices, column_indices, first_page
     return total_cells 
 
 def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copiesperlabel):
-    """
-    Distributes labels across multiple pages according to page capacity constraints.
-    
-    This function handles the pagination of labels, accounting for different capacities
-    on the first page versus subsequent pages, and managing the replication of each data item
-    according to the specified copies per label.
-    
-    Parameters:
-    -----------
-    first_page_max_labels : int
-        Maximum number of individual labels that can fit on the first page.
-    max_labels_per_page : int
-        Maximum number of individual labels that can fit on each subsequent page.
-    data_list : list
-        List of data items to be formatted as labels.
-    copiesperlabel : int
-        Number of times each data item should be repeated (copies of the same label).
-    
-    Returns:
-    --------
-    tuple
-        A tuple containing:
-        - firstpage: List of labels for the first page
-        - pages: List of lists, where each inner list contains labels for a subsequent page
-          (empty if all labels fit on the first page)
-    """
-    # Calculate total number of individual labels needed
     total_labels = len(data_list) * copiesperlabel
 
-    # Case 1: All labels fit on the first page
     if first_page_max_labels > len(data_list) * copiesperlabel:
         num_pages = 1
         firstpage = []
-        pages = []  # Will remain empty since all labels fit on first page
+        pages = []
         remainder = 0
         data_count = 0
-        
-        # Build the first page, repeating each data item according to copiesperlabel
         while len(firstpage) < len(data_list):
             for i in range(copiesperlabel):
                 firstpage.append(data_list[data_count])
                 remainder = copiesperlabel - (i + 1)
                 if remainder == 0:
-                    # Move to next data item after adding all copies
                     data_count += 1
   
-    # Case 2: Labels span multiple pages
+
     else:
-        # Calculate total number of pages needed
         num_pages = math.ceil((total_labels - first_page_max_labels) / max_labels_per_page) + 1
         firstpage = []
 
-        # Calculate how many data items can fit on first page
         first_page_max_data = first_page_max_labels // copiesperlabel
-        
-        # Adjust if there's room for part of another data item's copies
+
         if first_page_max_data * copiesperlabel < first_page_max_labels:
             first_page_max_data += 1
 
-        # Build the first page with copies of each data item
         for item in data_list[:first_page_max_data]:
             for i in range(copiesperlabel):
                 firstpage.append(item)
-        
-        # Handle overflow if we added too many labels to the first page
         if len(firstpage) > first_page_max_labels:
-            # Store overflow labels as "hangover" for the next page
             hangover = [firstpage[first_page_max_labels:]]
-        else: 
+        else:
             hangover = []
-        
-        # Trim first page to maximum capacity
         firstpage = firstpage[:first_page_max_labels]
-        
-        # Combine hangover with remaining unprocessed data items
         remaining = hangover + data_list[first_page_max_data:]
         pages = []
         remainingindex = 0
         page = []
-        
-        # Process subsequent pages
         for i in range(1, num_pages):
-            # Initialize the current page with any hangover from previous page
             if remainingindex == 0:
-                page = remaining[0]
+                if len(hangover) == 0:
+                    page = []
+                else:
+                    page = remaining[0]
                 remainingindex += 1
-            
-            # Calculate remaining capacity on current page
             remaining_labels_on_page = max_labels_per_page - len(page)
-            # Calculate how many more data items can fit (accounting for copies)
             remaining_data_items_on_page = math.ceil(remaining_labels_on_page / copiesperlabel)
-            
-            # Add labels to current page up to capacity
             for item in remaining[remainingindex : remaining_data_items_on_page]:
                 remainingindex += 1
                 for i in range(copiesperlabel):
                     page.append(item)
-            
-            # Identify labels that don't fit on current page
-            hangover = page[remaining_labels_on_page:]
-            # Trim current page to maximum capacity
+            if remaining_labels_on_page > 0:
+                hangover = page[remaining_labels_on_page:]
+            else:
+                hangover = []
             page = page[:remaining_labels_on_page]
-            # Add completed page to pages list
             pages.append(page)
-            
-            # Reset index and update remaining items for next iteration
             remainingindex = 0
-            # Combine hangover with remaining unprocessed items
             remaining = hangover + remaining[remainingindex:]
             remainingindex = 0
-            
     return firstpage, pages
+
+
+
 
 
 def format_labels_single(datalist, templatepath, rowindices, columnindices, spec):
@@ -496,6 +447,6 @@ def combine_docs(doc1, doc2):
         Document: Combined document.
     """
     print("called combine_docs")
-    composer = Composer(doc1)
-    composer.append(doc2)
-    return composer.doc
+    for element in doc2.element.body:
+        doc1.element.body.append(element)
+    return doc1
