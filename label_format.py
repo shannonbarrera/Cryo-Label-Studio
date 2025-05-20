@@ -92,15 +92,10 @@ def paginate_labels(first_page_max_labels, max_labels_per_page, data_list, copie
         num_pages = 1
         firstpage = []
         pages = []
-        copycount = 0
-        data_count = 0
-        for i in range(total_labels):
-            for i in range(copiesperlabel):
-                firstpage.append(data_list[data_count])
-                copycount += 1
-                if copycount == copiesperlabel:
-                    data_count += 1
-                    copycount = 0
+        for item in data_list:
+            for _ in range(copiesperlabel):
+                firstpage.append(item)
+
     
   
 
