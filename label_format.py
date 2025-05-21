@@ -196,24 +196,26 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
 
     first_row = first_page_row_indices[0]
 
-    if len(first_page_row_indices) == 1:
-        middle_rows = []
-        last_row = None
-        
-
-    if len(first_page_row_indices) == 2:
-        middle_rows = []
-        last_row = first_page_row_indices[1]
 
     if len(first_page_row_indices) > 2:
         middle_rows = first_page_row_indices[1:-1]
         last_row = first_page_row_indices[-1]
 
+    elif len(first_page_row_indices) <= 2:
+        middle_rows = []
+        last_row = first_page_row_indices[-1]
+    print("first row")
+    print(first_row)
+    print(first_page_first_row_col_indices)
+    print(middle_rows)
+    print(last_row)
+    print(first_page_last_row_col_indices)
     labelcount = 0
     for cind in first_page_first_row_col_indices:
         if labelcount >= len(data_list):
             return labelsheet
         current_cell = table.rows[first_row].cells[cind]
+        print(data_list[labelcount])
         format_label_cell(current_cell, data_list[labelcount], textboxformatinput, fontname, fontsize)
         labelcount += 1
 
@@ -225,13 +227,15 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
             for cind in column_indices:
                 if labelcount >= len(data_list):
                     return labelsheet
+                print(data_list[labelcount])
                 format_label_cell(current_row.cells[cind], data_list[labelcount], textboxformatinput, fontname, fontsize)
                 labelcount += 1
-    if last_row != None:
+    if last_row != first_row:
         for cind in first_page_last_row_col_indices:
             if labelcount >= len(data_list):
                 return labelsheet
             current_cell = table.rows[last_row].cells[cind]
+            print(data_list[labelcount])
             format_label_cell(current_cell, data_list[labelcount], textboxformatinput, fontname, fontsize)
             labelcount += 1
 
@@ -403,10 +407,10 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
 def apply_format_to_row(textboxformatinput, row_data):
     """
     Applies a label format string with placeholders to a row of data.
-    Skips missing or None values and formats datetime objects as dates.
+    Skips None values by leaving the placeholder empty and formats datetime objects.
 
     Args:
-        textboxformatinput(str): A string with placeholders like "{SampleID}\n{Date}".
+        textboxformatinput (str): A string with placeholders like "{SampleID}\n{Date}".
         row_data (list): A list of values in the same order as placeholders.
 
     Returns:
@@ -417,17 +421,17 @@ def apply_format_to_row(textboxformatinput, row_data):
 
     for i, key in enumerate(placeholders):
         if i >= len(row_data):
-            continue
-        value = row_data[i]
-        if value is None:
-            continue
-        if isinstance(value, datetime):
-            value = value.strftime('%m-%d-%Y')
-        placeholder_to_value[key] = str(value)
+            placeholder_to_value[key] = ""
+        else:
+            value = row_data[i]
+            if isinstance(value, datetime):
+                value = value.strftime('%m-%d-%Y')
+            placeholder_to_value[key] = "" if value is None else str(value)
+
     try:
         return textboxformatinput.format(**placeholder_to_value)
     except KeyError:
-        return ""  # Return empty string if format fails for some reason
+        return ""  # Optional: log the error or return partial string instead
 
 def combine_docs(doc1, doc2):
     """

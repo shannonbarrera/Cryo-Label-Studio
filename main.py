@@ -89,7 +89,8 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
             final_doc = combine_docs(final_doc, next_doc)
             print("final_doc")
 
-        print("formatted")
+        save_file(output_file_path, final_doc)
+        return
     elif spec.presettype == "Text":
 
         if logic == "identical":
