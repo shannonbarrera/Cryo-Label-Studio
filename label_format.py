@@ -31,7 +31,6 @@ def get_first_page_row_indices(start_row, end_row, row_indices):
     for i in range(len(row_indices)):
         if i >= start_row-1 and i <= end_row-1:
             first_page_row_indices.append(row_indices[i])
-    print(first_page_row_indices)
     return first_page_row_indices
 
 def get_first_page_col_indices(start_col, end_col, start_row, end_row, col_indices):
@@ -42,7 +41,7 @@ def get_first_page_col_indices(start_col, end_col, start_row, end_row, col_indic
             if i >= start_col-1 and i <= end_col -1:
                 first_page_first_row_col_indices.append(col_indices[i])
         return first_page_first_row_col_indices, first_page_last_row_col_indices
-    print(start_col)
+
     for i in range(len(col_indices)):
         if i >= start_col-1:
             first_page_first_row_col_indices.append(col_indices[i])

@@ -10,7 +10,7 @@ from label_templates import label_templates
 from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
-
+from data_process import is_valid_serial_format
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
@@ -229,16 +229,26 @@ class CryoPopLabelStudioLite:
         try:
             if spec.presettype == "Text":
                 text = self.widgets["user_input"].get("1.0", "end").strip()
-                if spec.identical_or_incremental.lower() == "serial" and not text.isnumeric():
-                    messagebox.showerror("Error", "Serial format must be a number.")
-                    return
-
-                main(spec, text_box_input=text, output_file_path=output_path)
+                
+                if spec.identical_or_incremental.lower() == "incremental":
+                    if not is_valid_serial_format(text):
+                        messagebox.showerror(
+                            "Error",
+                            "Serial format must:\n"
+                            "- Be 12 characters or fewer\n"
+                            "- Match one of these formats:\n"
+                            "  • Numbers only (e.g., 1234)\n"
+                            "  • Prefix (1–5 letters/numbers) + dash + digits (e.g., ab-123)\n"
+                            "  • Prefix + underscore + digits (e.g., xy_0999)\n"
+                            "  • Prefix + digits (e.g., ab0001)"
+                        )
+                        return 
+                    main(spec, text_box_input=text, output_file_path=output_path)
 
             elif spec.presettype == "File":
                 if not hasattr(self, "input_file_path") or not self.input_file_path:
                     messagebox.showerror("Error", "Please upload a CSV or file.")
-                    return
+                    return 
                 main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
 
             os.startfile(output_path)

@@ -96,7 +96,7 @@ class PresetEditor(tk.Toplevel):
 
 
             elif key == "identical_or_incremental":
-                cb = ttk.Combobox(self, values=["Identical", "Serial"], state="readonly")
+                cb = ttk.Combobox(self, values=["Identical", "Incremental"], state="readonly")
                 cb.set(self.preset_data.get(key, "Identical"))
                 cb.grid(row=row_counter, column=1, padx=10, pady=4)
                 cb.bind("<<ComboboxSelected>>", self.toggle_labels_per_serial)
@@ -108,7 +108,7 @@ class PresetEditor(tk.Toplevel):
                 self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
                 self.labels_per_serial_dropdown.set(str(self.preset_data.get("labels_perserial", "1")))
 
-                if cb.get() == "Serial":
+                if cb.get() == "Incremental":
                     self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
                     self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
 
@@ -204,7 +204,7 @@ class PresetEditor(tk.Toplevel):
 
 
     def toggle_labels_per_serial(self, event=None):
-        if self.entries["identical_or_incremental"].get() == "Serial":
+        if self.entries["identical_or_incremental"].get() == "Incremental":
             self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
             self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
         else:
@@ -238,7 +238,7 @@ class PresetEditor(tk.Toplevel):
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
-        if self.preset_type == "Text" and self.entries.get("identical_or_incremental", "").get() == "Serial":
+        if self.preset_type == "Text" and self.entries.get("identical_or_incremental", "").get() == "Incremental":
             preset["labels_perserial"] = self.labels_per_serial_dropdown.get()
 
         for key, widget in self.entries.items():

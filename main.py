@@ -76,31 +76,32 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
         first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
         first_page, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel)
         pages = [first_page]
-        print(pages)
-        print(otherpages)
+
         pages = pages + otherpages
-        print(pages)
-        print("about to format")
+
         final_doc = format_labels_firstpage_fromfile(pages[0], templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
-        print("first page done")
+
         for page in pages[1:]:
             next_doc = format_labels_single(page, templatepath, row_indices, column_indices, spec)
-            print("next_doc")
             final_doc = combine_docs(final_doc, next_doc)
-            print("final_doc")
 
         save_file(output_file_path, final_doc)
         return
-    elif spec.presettype == "Text":
 
-        if logic == "identical":
+    elif spec.presettype == "Text":
+        print("text input")
+        print(spec.identical_or_incremental)
+        if spec.identical_or_incremental == "identical":
             get_data_list_fromtext(text_box_input, logic)
+            
             final_doc = format_labels_identical(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
-        elif logic == "incremental":
+        elif spec.identical_or_incremental== "incremental":
             final_doc = format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
-        elif logic == "serial":
+        elif spec.identical_or_incremental == "incremental":
+            print("is incremental")
             try:
                 count = int(spec.labels_perserial)
+                print(count)
             except (TypeError, ValueError):
                 count = 1
             num_serials = 100  # or make this configurable
