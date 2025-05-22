@@ -213,6 +213,7 @@ class CryoPopLabelStudioLite:
             filetypes=[("Word Document", "*.docx"), ("PDF Document", "*.pdf")],
             initialfile=initial_filename
         )
+        print(output_path)
         if not output_path:
             return
 
@@ -229,7 +230,7 @@ class CryoPopLabelStudioLite:
         try:
             if spec.presettype == "Text":
                 text = self.widgets["user_input"].get("1.0", "end").strip()
-                
+                print(text)
                 if spec.identical_or_incremental.lower() == "incremental":
                     if not is_valid_serial_format(text):
                         messagebox.showerror(
@@ -243,15 +244,17 @@ class CryoPopLabelStudioLite:
                             "  • Prefix + digits (e.g., ab0001)"
                         )
                         return 
-                    main(spec, text_box_input=text, output_file_path=output_path)
 
+                    main(spec, text_box_input=text, output_file_path=output_path)
+                elif spec.identical_or_incremental.lower() == "identical":
+                    main(spec, text_box_input=text, output_file_path=output_path)
             elif spec.presettype == "File":
                 if not hasattr(self, "input_file_path") or not self.input_file_path:
                     messagebox.showerror("Error", "Please upload a CSV or file.")
                     return 
                 main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
 
-            os.startfile(output_path)
+            
         except Exception as e:
             messagebox.showerror("Error", f"Label generation failed:\n{e}")
 

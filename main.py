@@ -30,6 +30,7 @@ from label_format import (
     format_labels_identical,
     format_labels_incremental,
     combine_docs,
+    apply_format_to_row,
 )
 
 from label_spec import LabelSpec
@@ -93,15 +94,21 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
         print(f"Logic: {logic}")
 
         if logic == "Identical":
-            data_list = get_data_list_fromtext(text_box_input, logic)
-            print(data_list)
-            final_doc = format_labels_identical(
-                text_box_input,
+            first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
+            labeltext = apply_format_to_row(spec.textboxformatinput, text_box_input)
+            print(labeltext)
+            data_list = []
+            for i in range(first_page_max_labels):
+                data_list.append(labeltext)
+
+            final_doc = format_labels_firstpage_fromfile(
+                data_list,
                 templatepath,
-                row_indices,
+                first_page_row_indices,
                 column_indices,
-                spec.fontname,
-                spec.fontsize
+                first_page_first_row_col_indices,
+                first_page_last_row_col_indices,
+                spec
             )
 
         elif logic == "Incremental":

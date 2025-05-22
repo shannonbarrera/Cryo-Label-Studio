@@ -77,13 +77,14 @@ def extract_label_info(sheet, textboxformatinput):
 
 def get_label_data_list_format(textboxformatinput):
     """
-    Converts a format string with letter references (e.g., 'B\nD, C\nE') into column indices.
+    Converts a format string into column indices.
 
     Args:
-        textboxformatinput (str): Format string where letters refer to column indices.
+        textboxformatinput (str): Format string where {} refer to column indices.
 
     Returns:
         list: List of zero-based column indices.
     """
     findlist = re.findall(r'{(.*?)}', textboxformatinput)
     return findlist
+
