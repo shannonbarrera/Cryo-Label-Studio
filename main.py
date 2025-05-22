@@ -1,5 +1,5 @@
 import sys
-
+import re
 from label_templates import label_templates
 
 from data_extract import (
@@ -87,31 +87,59 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
         save_file(output_file_path, final_doc)
         return
-
+    
     elif spec.presettype == "Text":
-        print("text input")
-        print(spec.identical_or_incremental)
-        if spec.identical_or_incremental == "identical":
-            get_data_list_fromtext(text_box_input, logic)
-            
-            final_doc = format_labels_identical(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
-        elif spec.identical_or_incremental== "incremental":
-            final_doc = format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
-        elif spec.identical_or_incremental == "incremental":
-            print("is incremental")
+        logic = spec.identical_or_incremental
+        print(f"Logic: {logic}")
+
+        if logic == "Identical":
+            data_list = get_data_list_fromtext(text_box_input, logic)
+            print(data_list)
+            final_doc = format_labels_identical(
+                text_box_input,
+                templatepath,
+                row_indices,
+                column_indices,
+                spec.fontname,
+                spec.fontsize
+            )
+
+        elif logic == "Incremental":
+
+            match = re.match(r"([A-Za-z0-9\-_]*?)(\d+)$", text_box_input)
+            if not match:
+                messagebox.showerror("Error", "Starting serial must end in a number (e.g., AB-001)")
+                return
+
+            prefix, start_num = match.groups()
+            num_digits = len(start_num)
+            start = int(start_num)
+
             try:
-                count = int(spec.labels_perserial)
-                print(count)
+                count = int(spec.copiesperlabel)
             except (TypeError, ValueError):
                 count = 1
-            num_serials = 100  # or make this configurable
+            print(count)
+            first_page_max_labels = get_max_labels_first_page(
+                first_page_row_indices,
+                column_indices,
+                first_page_first_row_col_indices,
+                first_page_last_row_col_indices
+            )
+
+            num_serials = first_page_max_labels // count
             labels = []
-            for i in range(1, num_serials + 1):
-                serial = f"{i:03}"
+
+            for i in range(start, start + num_serials):
+                serial_num = f"{i:0{num_digits}d}"
+                serial = f"{prefix}{serial_num}"
                 for _ in range(count):
-                    label = spec.textboxformatinput.replace("{serial}", serial)
-                    labels.append(label)
-            final_doc = format_labels_identical("\\n".join(labels), templatepath, row_indices, column_indices, spec.fontname, spec.fontsize)
+                    label = spec.textboxformatinput.replace("{LABEL_TEXT}", serial)
+                    labels.append([label])
+            print(labels)
+
+
+            final_doc = format_labels_firstpage_fromfile(labels, templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
 
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")

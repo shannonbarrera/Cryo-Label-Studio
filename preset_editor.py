@@ -47,9 +47,6 @@ class PresetEditor(tk.Toplevel):
         if self.preset_type == "Text":
             fields.insert(2, ("identical_or_incremental", "Logic"))
 
-   
-            fields = [f for f in fields if f[0] != "copiesperlabel"]
-
         row_counter = 0
         for key, label in fields:
             tk.Label(self, text=label).grid(row=row_counter, column=0, sticky="w", padx=10, pady=4)
@@ -104,9 +101,11 @@ class PresetEditor(tk.Toplevel):
 
                 # Setup Labels Per Serial widgets
                 self.labels_per_serial_row = row_counter + 1
-                self.labels_per_serial_label = tk.Label(self, text="Labels Per Serial")
+                # NEW — use the same key as File presets
+                self.labels_per_serial_label = tk.Label(self, text="Copies Per Label")
                 self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
-                self.labels_per_serial_dropdown.set(str(self.preset_data.get("labels_perserial", "1")))
+                self.labels_per_serial_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
+
 
                 if cb.get() == "Incremental":
                     self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
@@ -116,10 +115,17 @@ class PresetEditor(tk.Toplevel):
 
 
             elif key == "copiesperlabel":
-                cb = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
-                cb.set(str(self.preset_data.get(key, "1")))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
-                self.entries[key] = cb
+                self.copiesperlabel_row = row_counter
+                self.copiesperlabel_label = tk.Label(self, text="Copies Per Label")
+                self.copiesperlabel_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
+                self.copiesperlabel_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
+
+                if self.preset_type == "File" or self.preset_data.get("identical_or_incremental", "Identical") == "Incremental":
+                    self.copiesperlabel_label.grid(row=row_counter, column=0, sticky="w", padx=10, pady=4)
+                    self.copiesperlabel_dropdown.grid(row=row_counter, column=1, padx=10, pady=4)
+
+                self.entries["copiesperlabel"] = self.copiesperlabel_dropdown
+
 
             elif key == "fontname":
                 cb = ttk.Combobox(self, values=["Arial", "Courier", "Helvetica", "Times", "Verdana"], state="readonly")
@@ -158,6 +164,26 @@ class PresetEditor(tk.Toplevel):
             if self.preset_data.get("textboxformatinput"):
                 self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
             row_counter += 1
+
+        if self.preset_type == "Text":
+            # Label Format Section
+            format_label = tk.Label(self, text="Label Text Format:")
+            format_label.grid(row=row_counter, column=0, sticky="nw", padx=10, pady=(10, 0))
+
+            self.format_entry = tk.Text(self, height=4, width=50)
+            self.format_entry.grid(row=row_counter, column=1, padx=10, pady=(10, 0))
+            self.entries["textboxformatinput"] = self.format_entry
+
+            row_counter += 1
+
+            def insert_label_text():
+                self.format_entry.insert(tk.INSERT, "{LABEL_TEXT}")
+
+            insert_button = tk.Button(self, text="{LABEL_TEXT}", command=insert_label_text)
+            insert_button.grid(row=row_counter, column=1, sticky="w", padx=10, pady=(0, 10))
+
+            row_counter += 1
+
 
         self.save_button = tk.Button(self, text="Save Preset", command=self.save_preset)
         self.save_button.grid(row=row_counter, column=0, columnspan=2, pady=20)
@@ -205,11 +231,11 @@ class PresetEditor(tk.Toplevel):
 
     def toggle_labels_per_serial(self, event=None):
         if self.entries["identical_or_incremental"].get() == "Incremental":
-            self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
-            self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
+            self.copiesperlabel_label.grid(row=self.copiesperlabel_row, column=0, sticky="w", padx=10, pady=4)
+            self.copiesperlabel_dropdown.grid(row=self.copiesperlabel_row, column=1, padx=10, pady=4)
         else:
-            self.labels_per_serial_label.grid_remove()
-            self.labels_per_serial_dropdown.grid_remove()
+            self.copiesperlabel_label.grid_remove()
+            self.copiesperlabel_dropdown.grid_remove()
 
     def update_textbox_size(self, event=None):
         if not self.textbox_format:
@@ -238,24 +264,33 @@ class PresetEditor(tk.Toplevel):
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
-        if self.preset_type == "Text" and self.entries.get("identical_or_incremental", "").get() == "Incremental":
-            preset["labels_perserial"] = self.labels_per_serial_dropdown.get()
 
         for key, widget in self.entries.items():
             if key == "labeltemplate":
+                # Convert display name back to internal template key
                 display_value = widget.get()
                 internal_value = self.template_display_map.get(display_value, display_value)
                 preset[key] = internal_value
+
             elif isinstance(widget, tk.BooleanVar):
                 preset[key] = widget.get()
+
             elif isinstance(widget, ttk.Combobox):
-                val = widget.get()
-                preset[key] = int(val) if key == "copiesperlabel" else val
-            else:
                 val = widget.get()
                 preset[key] = int(val) if val.isdigit() else val
 
-        # Add UI layout to the preset if you want static layout elements saved
+            elif isinstance(widget, tk.Text):
+                val = widget.get("1.0", "end-1c").strip()
+                preset[key] = val
+
+            else:  # Entry or other widget
+                try:
+                    val = widget.get()
+                    preset[key] = int(val) if val.isdigit() else val
+                except Exception:
+                    print(f"Skipping unknown widget for key: {key}")
+
+        # Always save UI layout (optional, customizable per preset type)
         if self.preset_type == "Text":
             preset["ui_layout"] = {
                 "elements": [
@@ -272,27 +307,29 @@ class PresetEditor(tk.Toplevel):
                 ]
             }
 
-
-        if self.textbox_format:
-            preset["textboxformatinput"] = self.textbox_format.get("1.0", "end-1c")
-            print(preset["textboxformatinput"])
-
+        # Generate filename if not provided
         if not self.preset_path:
-            safe_name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")).strip().replace(" ", "_")
+            safe_name = "".join(
+                c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")
+            ).strip().replace(" ", "_")
+
             counter = 1
             filename = f"{safe_name}.json"
             full_path = os.path.join("presets", filename)
+
             while os.path.exists(full_path):
                 filename = f"{safe_name}_{counter}.json"
                 full_path = os.path.join("presets", filename)
                 counter += 1
+
             self.preset_path = full_path
 
-
+        # Write to file
         if self.preset_path:
             os.makedirs(os.path.dirname(self.preset_path), exist_ok=True)
             with open(self.preset_path, "w") as f:
                 json.dump(preset, f, indent=4)
+
             messagebox.showinfo("Success", "Preset saved successfully.")
             if self.on_save:
                 self.on_save()
