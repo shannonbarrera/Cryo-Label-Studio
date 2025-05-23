@@ -9,16 +9,23 @@ import openpyxl as xlsx
 
 class PresetEditor(tk.Toplevel):
     def __init__(self, master, preset_type="File", preset_data=None, preset_path=None, on_save=None):
-        super().__init__(master)
-        title = "New Text Input Preset" if preset_type == "Text" and preset_data is None else                 "New File Input Preset" if preset_data is None else "Edit Preset"
-        self.title(title)
-        self.geometry("550x600")
+        if preset_data and "presettype" in preset_data:
+            preset_type = preset_data["presettype"]
 
         self.preset_type = preset_type
         self.preset_data = preset_data or {}
         self.preset_path = preset_path
         self.on_save = on_save
         self.entries = {}
+
+        if preset_data is None:
+            title = "New Text Input Preset" if preset_type == "Text" else "New File Input Preset"
+        else:
+            title = "Edit Text Input Preset" if preset_type == "Text" else "Edit File Input Preset"
+
+        super().__init__(master)
+        self.title(title)
+        self.geometry("550x600")
 
         self.header_buttons_frame = None
         self.textbox_format = None
@@ -163,6 +170,8 @@ class PresetEditor(tk.Toplevel):
             self.textbox_format.grid(row=row_counter, column=1, padx=10)
             if self.preset_data.get("textboxformatinput"):
                 self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
+            self.entries["textboxformatinput"] = self.textbox_format
+
             row_counter += 1
 
         if self.preset_type == "Text":
@@ -173,6 +182,11 @@ class PresetEditor(tk.Toplevel):
             self.format_entry = tk.Text(self, height=4, width=50)
             self.format_entry.grid(row=row_counter, column=1, padx=10, pady=(10, 0))
             self.entries["textboxformatinput"] = self.format_entry
+            self.textbox_format = self.format_entry
+
+            if self.preset_data.get("textboxformatinput"):
+                self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
+
 
             row_counter += 1
 
@@ -280,7 +294,7 @@ class PresetEditor(tk.Toplevel):
                 preset[key] = int(val) if val.isdigit() else val
 
             elif isinstance(widget, tk.Text):
-                val = widget.get("1.0", "end-1c").strip()
+                val = widget.get("0.0", "end-1c").rstrip()
                 preset[key] = val
 
             else:  # Entry or other widget

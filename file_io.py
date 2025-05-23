@@ -48,4 +48,5 @@ def save_file(filepath, content):
         filepath = f"{filename}_{counter}{extension}"
         counter += 1
     content.save(filepath)
+    os.startfile(filepath)
 

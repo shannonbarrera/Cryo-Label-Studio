@@ -244,9 +244,10 @@ class CryoPopLabelStudioLite:
                             "  • Prefix + digits (e.g., ab0001)"
                         )
                         return 
-
+            
                     main(spec, text_box_input=text, output_file_path=output_path)
                 elif spec.identical_or_incremental.lower() == "identical":
+                    text = [text]
                     main(spec, text_box_input=text, output_file_path=output_path)
             elif spec.presettype == "File":
                 if not hasattr(self, "input_file_path") or not self.input_file_path:
@@ -260,6 +261,7 @@ class CryoPopLabelStudioLite:
 
     def upload_sample_file(self):
         path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])
+
         if path:
             self.input_file_path = path
             try:
@@ -269,7 +271,9 @@ class CryoPopLabelStudioLite:
                 else:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
 
+
                 if data_list and len(data_list) > 0:
+                    
                     preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0])
                 else:
                     preview = "No data found or invalid format."

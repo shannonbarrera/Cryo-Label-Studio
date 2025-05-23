@@ -1,3 +1,18 @@
+"""
+Main module for label generation using CryoPop Label Studio presets.
+
+This script processes label specifications (via LabelSpec) and generates formatted Word documents
+based on either text-based or file-based input. It handles template selection, layout calculation,
+pagination, serial number generation, and document formatting.
+
+Supported input types:
+- File presets (.csv or .xlsx input)
+- Text presets with either identical or incremental logic
+
+The resulting document is saved to the specified output path.
+"""
+
+
 import sys
 import re
 from label_templates import label_templates
@@ -12,9 +27,9 @@ from data_process import (
 )
 
 from file_io import (
-    get_template,
     get_file_path,
-    save_file
+    save_file,
+    get_template
 )
 
 from label_format import (
@@ -27,8 +42,6 @@ from label_format import (
     format_labels_firstpage_fromfile,
     format_labels_single,
     format_labels_multi,
-    format_labels_identical,
-    format_labels_incremental,
     combine_docs,
     apply_format_to_row,
 )
@@ -37,6 +50,27 @@ from label_spec import LabelSpec
 from docx import Document
 
 def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None):
+    """
+    Generates formatted labels based on the provided LabelSpec and input data.
+
+    This function supports both file-based and text-based label generation:
+    - File presets extract data from CSV/XLSX and populate labels using a format string.
+    - Text presets either repeat a static value ("Identical") or increment serials ("Incremental").
+
+    Args:
+        spec (LabelSpec): Preset specification defining layout, format, and behavior.
+        input_file_path (str, optional): Path to the CSV or XLSX input file for 'File' presets.
+        output_file_path (str, optional): Path to save the generated Word document.
+        text_box_input (str, optional): Text or serial prefix for 'Text' presets.
+
+    Raises:
+        ValueError: If the input file type is unsupported or the preset type is invalid.
+        Exception: For issues during data parsing, formatting, or saving.
+
+    Returns:
+        None. The final document is saved to disk.
+    """
+    print("main called")
     template_meta = label_templates[spec.labeltemplate]
     templatepath = template_meta["template_path"]
     labeltemplateexample = Document(templatepath)
@@ -95,8 +129,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
         if logic == "Identical":
             first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
-            labeltext = apply_format_to_row(spec.textboxformatinput, text_box_input)
-            print(labeltext)
+            labeltext = text_box_input
             data_list = []
             for i in range(first_page_max_labels):
                 data_list.append(labeltext)
@@ -143,7 +176,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
                 for _ in range(count):
                     label = spec.textboxformatinput.replace("{LABEL_TEXT}", serial)
                     labels.append([label])
-            print(labels)
+
 
 
             final_doc = format_labels_firstpage_fromfile(labels, templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
@@ -153,6 +186,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
 
 
     save_file(output_file_path, final_doc)
+   
 
     
 if __name__ == "__main__":

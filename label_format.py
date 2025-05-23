@@ -203,12 +203,7 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
     elif len(first_page_row_indices) <= 2:
         middle_rows = []
         last_row = first_page_row_indices[-1]
-    print("first row")
-    print(first_row)
-    print(first_page_first_row_col_indices)
-    print(middle_rows)
-    print(last_row)
-    print(first_page_last_row_col_indices)
+        
     labelcount = 0
     for cind in first_page_first_row_col_indices:
         if labelcount >= len(data_list):
@@ -281,90 +276,6 @@ def format_labels_multi(datalist, templatepath, rowindices, columnindices, copie
     return labelsheet
 
 
-def format_labels_identical(text_box_input, templatepath, row_indices, column_indices, fontname, fontsize):
-    """
-    Formats the entire label sheet for a given text input and applies the label template formatting.
-
-    Args:
-        textinput (str): The text to populate each label cell with.
-        labelsheetloc (str): Path to the label template (Word document).
-
-    Returns:
-        Document: A `docx.Document` object with the populated label data.
-    """
-    labelsheet = Document(templatepath)
-    table = labelsheet.tables[0]
-
-    for rind in row_indices:
-        currentrow = table.rows[rind].cells
-
-        for cind in column_indices:
-            format_label_cell(currentrow[cind], text_box_input, None, fontname, fontsize)
-
-
-    return labelsheet
-
-
-def format_labels_incremental(text_box_input, templatepath, row_indices, column_indices, fontname, fontsize):
-    """
-    Populates and formats the text in the table in the specified label sheet with the sequential numbers starting from 
-    the given starting number.
-
-    Args:
-        labelsheetpath (str): Path to the Word document that contains the label template.
-        starting (str): The starting number.  Supported formats: "prefix-####" (e.g., "25-0001" or "ABC-0001"), "#####" (e.g., "00123"),
-        "prefix####" (e.g. "AB0001").
-
-    Returns:
-        Document: The modified Word document with the filled labels.
-    """
-    labelsheet = Document(templatepath)
-    table = labelsheet.tables[0]
-    # Check if number is numeric or has a prefix or nonalphanumeric character
-    delimiter = None
-    if text_box_input.isnumeric():
-        tubenumber = int(text_box_input)
-        cellcontentformat = "{}"
-        zfillvar = len(text_box_input)
-    else:
-        if not text_box_input.isalnum():
-            for character in text_box_input:
-                if not character.isalnum():
-                    if not delimiter:
-                        delimiter = character
-                    else:
-                        sys.exit("Unsupported number format.")
-            tubelist = text_box_input.split(delimiter)
-            tubenumber = int(tubelist[1])
-            prefix = tubelist[0]
-            cellcontentformat = prefix + delimiter + "\n{}"
-            zfillvar = len(tubelist[1])
-        if text_box_input.isalnum():
-            tubenumber = ""
-            prefix = ""
-            prefixended = False
-            for character in text_box_input:
-                if character.isalpha():
-                    if prefixended == False:
-                        prefix = prefix + character
-                    else:
-                        sys.exit("Unsupported number format.")
-                if character.isnumeric():
-                    prefixended == True
-                    tubenumber = tubenumber + character
-            tubenumber = int(tubenumber)
-            cellcontentformat = prefix + "\n{}"
-            zfillvar = len(text_box_input) - len(prefix) + 1
-
-    # Iterate over the rows and columns to fill in the tube numbers
-    for rind in row_indices:
-        currentrow = table.rows[rind].cells
-        for cind in column_indices:
-            printnumber = str(tubenumber).zfill(zfillvar)
-            format_label_cell(currentrow[cind], cellcontentformat.format(printnumber), None, fontname, fontsize)
-            tubenumber +=1
-
-    return labelsheet
 
 def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
     """
