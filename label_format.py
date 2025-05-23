@@ -179,7 +179,7 @@ def format_labels_single(datalist, templatepath, rowindices, columnindices, spec
                 print("returned")
                 return labelsheet
             print(datalist[labeldata])
-            format_label_cell(table.rows[rind].cells[cind], datalist[labeldata], textboxformatinput, fontname, fontsize)
+            format_label_cell(table.rows[rind].cells[cind], datalist[labeldata], textboxformatinput, fontname, fontsize, spec.alignment)
             labeldata += 1
     print("done")
     return labelsheet
@@ -210,7 +210,7 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
             return labelsheet
         current_cell = table.rows[first_row].cells[cind]
         print(data_list[labelcount])
-        format_label_cell(current_cell, data_list[labelcount], textboxformatinput, fontname, fontsize)
+        format_label_cell(current_cell, data_list[labelcount], textboxformatinput, fontname, fontsize, spec.alignment)
         labelcount += 1
 
     if labelcount >= len(data_list):
@@ -222,7 +222,7 @@ def format_labels_firstpage_fromfile(data_list, templatepath, first_page_row_ind
                 if labelcount >= len(data_list):
                     return labelsheet
                 print(data_list[labelcount])
-                format_label_cell(current_row.cells[cind], data_list[labelcount], textboxformatinput, fontname, fontsize)
+                format_label_cell(current_row.cells[cind], data_list[labelcount], textboxformatinput, fontname, fontsize, spec.alignment)
                 labelcount += 1
     if last_row != first_row:
         for cind in first_page_last_row_col_indices:
@@ -249,7 +249,7 @@ def format_labels_multi(datalist, templatepath, rowindices, columnindices, copie
             if labelcount >= len(datalist):
                 return labelsheet
             for row in rows_to_fill:
-                format_label_cell(row[cind], datalist[labelcount], textboxformatinput, fontname, fontsize)
+                format_label_cell(row[cind], datalist[labelcount], textboxformatinput, fontname, fontsize, spec.alignment)
             labelcount += 1
 
     # Write the last rows of labels
@@ -271,13 +271,13 @@ def format_labels_multi(datalist, templatepath, rowindices, columnindices, copie
             for i in range(copiesperlabel):
                 cells_to_write.append(cind + (2 * i))
             for cell in cells_to_write:
-                format_label_cell(currentrow[cell], datalist[labelcount], textboxformatinput, fontname, fontsize)
+                format_label_cell(currentrow[cell], datalist[labelcount], textboxformatinput, fontname, fontsize, spec.alignment)
             labelcount += 1
     return labelsheet
 
 
 
-def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
+def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment):
     """
     Populates a single label cell with the given data and formats it according to the label template.
 
@@ -306,8 +306,16 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize):
 
     else: 
         cell.text = data
+
+    
+    alignment_map = {
+        "left": WD_ALIGN_PARAGRAPH.LEFT,
+        "center": WD_ALIGN_PARAGRAPH.CENTER,
+        "right": WD_ALIGN_PARAGRAPH.RIGHT
+    }
+
     for paragraph in cell.paragraphs:
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        paragraph.alignment = alignment_map.get(alignment.lower(), WD_ALIGN_PARAGRAPH.CENTER)
         for run in paragraph.runs:
             run.font.size = Pt(int(fontsize))
             run.font.name = fontname
