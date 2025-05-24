@@ -44,7 +44,6 @@ class PresetEditor(tk.Toplevel):
         self.fields = [
             ("name", "Preset Name"),
             ("labeltemplate", "Label Sheet Template"),
-            ("copiesperlabel", "Labels per Sample"),
             ("fontname", "Font Name"),
             ("fontsize", "Font Size"),
             ("text_alignment", "Label Text Alignment"),
@@ -57,36 +56,39 @@ class PresetEditor(tk.Toplevel):
         if self.preset_type == "Text":
             self.fields.insert(2, ("identical_or_incremental", "Logic"))
 
-    def _create_fields_ui(self):
-        row_counter = 0
-        for key, label in self.fields:
-            tk.Label(self, text=label).grid(row=row_counter, column=0, sticky="w", padx=10, pady=4)
+        elif self.preset_type == "File":
+            self.fields.insert(2, ("copiesperlabel", "Copies Per Label"))
 
-            if key == "partialsheet" or key == "output_add_date":
+
+    def _create_fields_ui(self):
+        field_row = 0
+        for key, label in self.fields:
+            tk.Label(self, text=label).grid(row=field_row, column=0, sticky="w", padx=10, pady=4)
+
+            if key in ["partialsheet", "output_add_date"]:
                 var = tk.BooleanVar()
                 var.set(self.preset_data.get(key, False))
                 cb = tk.Checkbutton(self, variable=var)
-                cb.grid(row=row_counter, column=1, padx=10, pady=4, sticky="w")
+                cb.grid(row=field_row, column=1, padx=10, pady=4, sticky="w")
                 self.entries[key] = var
 
             elif key == "outputformat":
                 cb = ttk.Combobox(self, values=["PDF", "DOCX"], state="readonly")
                 cb.set(self.preset_data.get(key, "PDF"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
             elif key == "color_theme":
                 cb = ttk.Combobox(self, values=["Pink", "Green", "Blue", "Yellow", "Purple"], state="readonly")
                 cb.set(self.preset_data.get(key, "Pink"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
             elif key == "text_alignment":
                 cb = ttk.Combobox(self, values=["Left", "Center", "Right"], state="readonly")
                 cb.set(self.preset_data.get(key, "Left"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
-
 
             elif key == "labeltemplate":
                 display_names = list(self.template_display_map.keys())
@@ -95,106 +97,116 @@ class PresetEditor(tk.Toplevel):
                 internal_value = self.preset_data.get(key)
                 display_name = self.template_internal_map.get(internal_value, display_names[0])
                 cb.set(display_name)
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
             elif key == "identical_or_incremental":
                 cb = ttk.Combobox(self, values=["Identical", "Incremental"], state="readonly")
                 cb.set(self.preset_data.get(key, "Identical"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 cb.bind("<<ComboboxSelected>>", self.toggle_labels_per_serial)
                 self.entries[key] = cb
 
-                self.labels_per_serial_row = row_counter + 1
+                self.labels_per_serial_row = field_row + 1
                 self.labels_per_serial_label = tk.Label(self, text="Copies Per Label")
-                self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
+                self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly")
                 self.labels_per_serial_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
+                self.labels_per_serial_dropdown.bind("<<ComboboxSelected>>", self.toggle_multi_mode)
 
                 if cb.get() == "Incremental":
                     self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
                     self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
 
-                row_counter += 2
+                field_row += 2
                 continue
 
             elif key == "copiesperlabel":
-                self.copiesperlabel_row = row_counter
-                self.copiesperlabel_label = tk.Label(self, text="Copies Per Label")
-                self.copiesperlabel_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)], state="readonly")
-                self.copiesperlabel_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
-                if self.preset_type == "File" or self.preset_data.get("identical_or_incremental", "Identical") == "Incremental":
-                    self.copiesperlabel_label.grid(row=row_counter, column=0, sticky="w", padx=10, pady=4)
-                    self.copiesperlabel_dropdown.grid(row=row_counter, column=1, padx=10, pady=4)
-                self.entries["copiesperlabel"] = self.copiesperlabel_dropdown
+                # Only add this for File presets
+                if self.preset_type == "File":
+                    self.copiesperlabel_row = field_row
+                    self.copiesperlabel_label = tk.Label(self, text="Copies Per Label")
+                    self.copiesperlabel_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly")
+                    self.copiesperlabel_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
+                    self.copiesperlabel_dropdown.bind("<<ComboboxSelected>>", self.toggle_multi_mode)
+                    self.copiesperlabel_label.grid(row=field_row, column=0, sticky="w", padx=10, pady=4)
+                    self.copiesperlabel_dropdown.grid(row=field_row, column=1, padx=10, pady=4)
+                    self.entries["copiesperlabel"] = self.copiesperlabel_dropdown
 
             elif key == "fontname":
                 cb = ttk.Combobox(self, values=["Arial", "Courier", "Helvetica", "Times", "Verdana"], state="readonly")
                 cb.set(self.preset_data.get(key, "Arial"))
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
             elif key == "fontsize":
                 cb = ttk.Combobox(self, values=["5.5", "6", "6.5", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"], state="readonly")
                 cb.set(str(self.preset_data.get(key, "6")))
                 cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
-                cb.grid(row=row_counter, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
             else:
                 entry = tk.Entry(self, width=40)
                 entry.insert(0, str(self.preset_data.get(key, "")))
-                entry.grid(row=row_counter, column=1, padx=10, pady=4)
+                entry.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = entry
 
-            row_counter += 1
+            field_row += 1
+
+        self.final_field_row = field_row
+
+
+    def toggle_labels_per_serial(self, event=None):
+
+        if self.entries["identical_or_incremental"].get() == "Incremental":
+            self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
+            self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
+        else:
+            self.labels_per_serial_label.grid_remove()
+            self.labels_per_serial_dropdown.grid_remove()
+
 
     def _handle_format_input_section(self):
-        row_counter = max(widget.grid_info()['row'] for widget in self.winfo_children()) + 1
+        # Start below the last fields row
+        format_row = self.final_field_row
 
         if self.preset_type == "File":
-            tk.Button(self, text="Upload Sample File", command=self.load_sample_file).grid(row=row_counter, column=0, columnspan=2, pady=10)
-            row_counter += 1
+            tk.Button(self, text="Upload Sample File", command=self.load_sample_file).grid(row=format_row, column=0, columnspan=2, pady=10)
+            format_row += 1
 
             self.header_buttons_frame = tk.Frame(self)
-            self.header_buttons_frame.grid(row=row_counter, column=0, columnspan=2, padx=10, pady=5, sticky="w")
-            row_counter += 1
+            self.header_buttons_frame.grid(row=format_row, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+            format_row += 1
 
-            tk.Label(self, text="Label Format:").grid(row=row_counter, column=0, columnspan=2, sticky="n", padx=10, pady=(10, 0))
-            row_counter += 1
+            tk.Label(self, text="Label Format:").grid(row=format_row, column=0, columnspan=2, sticky="n", pady=(10, 0))
+            format_row += 1
 
             self.textbox_format = tk.Text(self, width=75, height=8)
-            alignment = self.entries.get("text_alignment")
-            if hasattr(alignment, "get"):
-                align_value = alignment.get().lower()
-                self.textbox_format.tag_configure("align", justify=align_value)
-                self.textbox_format.tag_add("align", "1.0", "end")
-
-            self.textbox_format.grid(row=row_counter, column=0, columnspan=2, padx=10, pady=(0, 10))
-
+            self.textbox_format.grid(row=format_row, column=0, columnspan=2, padx=10, pady=(0, 10))
             if self.preset_data.get("textboxformatinput"):
                 self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
             self.entries["textboxformatinput"] = self.textbox_format
-            row_counter += 1
 
         elif self.preset_type == "Text":
-            tk.Label(self, text="Label Text Format:").grid(row=row_counter, column=0, sticky="nw", padx=10, pady=(10, 0))
+            tk.Label(self, text="Label Text Format:").grid(row=format_row, column=0, columnspan=2, sticky="n", pady=(10, 0))
+            format_row += 1
 
             self.format_entry = tk.Text(self, height=4, width=50)
-            self.format_entry.grid(row=row_counter, column=1, padx=10, pady=(10, 0))
+            self.format_entry.grid(row=format_row, column=0, columnspan=2, padx=10, pady=(0, 10))
             self.entries["textboxformatinput"] = self.format_entry
             self.textbox_format = self.format_entry
 
             if self.preset_data.get("textboxformatinput"):
                 self.textbox_format.insert("1.0", self.preset_data["textboxformatinput"])
 
-            row_counter += 1
+            format_row += 1
 
             def insert_label_text():
                 self.format_entry.insert(tk.INSERT, "{LABEL_TEXT}")
 
             insert_button = tk.Button(self, text="{LABEL_TEXT}", command=insert_label_text)
-            insert_button.grid(row=row_counter, column=1, sticky="w", padx=10, pady=(0, 10))
-            row_counter += 1
+            insert_button.grid(row=format_row, column=1, sticky="w", padx=10, pady=(0, 10))
+
 
 
     def _create_save_button(self):
@@ -209,6 +221,44 @@ class PresetEditor(tk.Toplevel):
         if self.on_save:
             self.on_save(preset, self.preset_path)
         self.destroy()
+
+    def toggle_multi_mode(self, event=None):
+        # Check if we need to show Multi for File preset
+        if hasattr(self, "copiesperlabel_dropdown") and self.copiesperlabel_dropdown.get() == "Multi":
+            self._show_multi_values_entry()
+        # Check if we need to show Multi for Incremental
+        elif hasattr(self, "labels_per_serial_dropdown") and self.labels_per_serial_dropdown.get() == "Multi":
+            self._show_multi_values_entry()
+        else:
+            self._hide_multi_values_entry()
+
+    def _show_multi_values_entry(self):
+        if not hasattr(self, "multi_values_frame"):
+            # Create the placeholder frame if it doesn't exist
+            self.multi_values_frame = tk.Frame(self)
+            self.multi_values_frame.grid(row=self.final_field_row + 1, column=0, columnspan=2, padx=10, pady=4)
+
+        # Clear anything inside the frame
+        for widget in self.multi_values_frame.winfo_children():
+            widget.destroy()
+
+        label = tk.Label(self.multi_values_frame, text="Multi Values (comma-separated):")
+        label.pack(side="left", padx=5)
+
+        entry = tk.Entry(self.multi_values_frame, width=30)
+        entry.pack(side="left", padx=5)
+
+        self.multi_values_label = label
+        self.multi_values_entry = entry
+
+    def _hide_multi_values_entry(self):
+        if hasattr(self, "multi_values_frame"):
+            for widget in self.multi_values_frame.winfo_children():
+                widget.destroy()
+            self.multi_values_label = None
+            self.multi_values_entry = None
+
+
 
     def _gather_entry_values(self):
         values = {}
