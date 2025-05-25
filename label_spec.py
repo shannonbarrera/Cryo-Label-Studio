@@ -7,6 +7,7 @@ class LabelSpec:
         self.labeltemplate = kwargs.get("labeltemplate")
         self.fontname = kwargs.get("fontname")
         self.fontsize = kwargs.get("fontsize")
+        self.alignment = kwargs.get("text_alignment", "Center")
         self.outputfilenameprefix = kwargs.get("outputfilenameprefix")
         self.output_add_date = kwargs.get("output_add_date")
         self.outputformat = kwargs.get("outputformat")

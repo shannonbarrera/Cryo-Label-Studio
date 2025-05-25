@@ -32,6 +32,8 @@ class CryoPopLabelStudioLite:
         self.setup_main_ui()
         self.load_all_presets()
         self.widgets = {}
+        self.selected_label_count = tk.StringVar()
+
 
 
     def setup_menu(self):
@@ -94,7 +96,63 @@ class CryoPopLabelStudioLite:
             self.clear_ui()
             self.build_ui_from_spec(self.current_spec.ui_layout)
 
-            print("Preset loaded")
+        # Clear old radio frame if exists
+        if hasattr(self, "multi_radio_frame"):
+            self.multi_radio_frame.destroy()
+
+        # Check File preset Multi
+        if getattr(self.current_spec, "copiesperlabel", "") == "Multi":
+            raw_values = getattr(self.current_spec, "multi_copiesperlabel", "")
+            value_list = [v.strip() for v in raw_values.split(",") if v.strip().isdigit()]
+
+            self.multi_radio_frame = tk.Frame(self.body_frame)
+            self.multi_radio_frame.pack(pady=10)
+
+            tk.Label(self.multi_radio_frame, text="Select Number of Copies:").pack(anchor="w")
+
+            for val in value_list:
+                rb = tk.Radiobutton(
+                    self.multi_radio_frame,
+                    text=val,
+                    variable=self.selected_label_count,
+                    value=val
+                )
+                rb.pack(side="left", padx=5)
+
+            if value_list:
+                self.selected_label_count.set(value_list[0])
+
+        # Check Text preset Multi
+        elif getattr(self.current_spec, "labels_per_serial", "") == "Multi":
+            raw_values = getattr(self.current_spec, "multi_labels_per_serial", "")
+            value_list = [v.strip() for v in raw_values.split(",") if v.strip().isdigit()]
+
+            self.multi_radio_frame = tk.Frame(self.body_frame)
+            self.multi_radio_frame.pack(pady=10)
+
+            tk.Label(self.multi_radio_frame, text="Select Labels Per Serial:").pack(anchor="w")
+
+            for val in value_list:
+                rb = tk.Radiobutton(
+                    self.multi_radio_frame,
+                    text=val,
+                    variable=self.selected_label_count,
+                    value=val
+                )
+                rb.pack(side="left", padx=5)
+
+            if value_list:
+                self.selected_label_count.set(value_list[0])
+
+        else:
+            self.selected_label_count.set(
+                str(
+                    getattr(self.current_spec, "copiesperlabel", getattr(self.current_spec, "labels_per_serial", "1"))
+                )
+            )
+
+        print("Preset loaded")
+
 
     def apply_preset_to_ui(self, spec):
         # Apply color theme
@@ -193,18 +251,27 @@ class CryoPopLabelStudioLite:
                 btn.pack(side=tk.LEFT, padx=10)
                 self.widgets[eid] = btn
 
-    
+
+
     def generate_labels(self):
         spec = self.current_spec
         if not spec:
             messagebox.showerror("Error", "No preset loaded.")
             return
 
-        date_str = datetime.now().strftime("%Y-%m-%d")  # e.g. 2025-05-16
+        # Handle Multi selected value
+        if getattr(spec, "copiesperlabel", "") == "Multi":
+            if hasattr(self, "selected_label_count"):
+                spec.copiesperlabel = int(self.selected_label_count.get())
+            else:
+                messagebox.showerror("Error", "Please select the number of copies from the Multi options.")
+                return
+
         filename_base = self.current_spec.outputfilenameprefix
-        if self.current_spec.output_add_date == True:
-            date_str = datetime.now().strftime("%Y-%m-%d") 
-            initial_filename = f"{filename_base}_{date_str}"
+
+        if self.current_spec.output_add_date:
+            datetime_str = datetime.now().strftime("%m%d%y%H%M")  # e.g. 0527241435
+            initial_filename = f"{filename_base}_{datetime_str}"
         else:
             initial_filename = filename_base
 
@@ -226,7 +293,6 @@ class CryoPopLabelStudioLite:
         if hasattr(self, "col_end_var"):
             spec.col_end = int(self.col_end_var.get())
 
-
         try:
             if spec.presettype == "Text":
                 text = self.widgets["user_input"].get("1.0", "end").strip()
@@ -244,20 +310,20 @@ class CryoPopLabelStudioLite:
                             "  • Prefix + digits (e.g., ab0001)"
                         )
                         return 
-            
                     main(spec, text_box_input=text, output_file_path=output_path)
                 elif spec.identical_or_incremental.lower() == "identical":
                     text = [text]
                     main(spec, text_box_input=text, output_file_path=output_path)
+
             elif spec.presettype == "File":
                 if not hasattr(self, "input_file_path") or not self.input_file_path:
                     messagebox.showerror("Error", "Please upload a CSV or file.")
                     return 
                 main(spec, input_file_path=self.input_file_path, output_file_path=output_path)
 
-            
         except Exception as e:
             messagebox.showerror("Error", f"Label generation failed:\n{e}")
+
 
     def upload_sample_file(self):
         path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])
@@ -344,8 +410,20 @@ class CryoPopLabelStudioLite:
         tk.Button(btn_frame, text="Edit", command=edit_selected).pack(side=tk.LEFT, padx=10)
         tk.Button(btn_frame, text="Delete", command=delete_selected).pack(side=tk.LEFT, padx=10)
 
-    def on_preset_saved(self):
+    def on_preset_saved(self, saved_preset):
+        saved_id = saved_preset.get("preset_id")
         self.load_all_presets()
+
+        # Find the matching preset by ID
+        for name, (path, data) in self.presets.items():
+            if data.get("preset_id") == saved_id:
+                self.preset_dropdown.set(name)
+                break
+        else:
+            # Optional fallback: clear selection if not found
+            self.preset_dropdown.set("")
+
+
 
     def run_label_maker(self):
         if self.current_spec:

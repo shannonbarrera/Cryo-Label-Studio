@@ -5,6 +5,7 @@ from tkinter import filedialog, messagebox, ttk
 import json
 import os
 import csv
+import uuid 
 import openpyxl as xlsx
 
 
@@ -49,7 +50,7 @@ class PresetEditor(tk.Toplevel):
             ("text_alignment", "Label Text Alignment"),
             ("outputformat", "Output Format"),
             ("outputfilenameprefix", "Default Output Filename"),
-            ("output_add_date", "Add Date to Filename"),
+            ("output_add_date", "Add Datetime Stamp to Filename"),
             ("partialsheet", "Partial Sheet Selection"),
             ("color_theme", "Color Scheme")
         ]
@@ -86,7 +87,7 @@ class PresetEditor(tk.Toplevel):
 
             elif key == "text_alignment":
                 cb = ttk.Combobox(self, values=["Left", "Center", "Right"], state="readonly")
-                cb.set(self.preset_data.get(key, "Left"))
+                cb.set(self.preset_data.get(key, "Center"))
                 cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
@@ -107,9 +108,13 @@ class PresetEditor(tk.Toplevel):
                 cb.bind("<<ComboboxSelected>>", self.toggle_labels_per_serial)
                 self.entries[key] = cb
 
+                # Reserve rows for incremental settings
                 self.labels_per_serial_row = field_row + 1
+                self.text_multi_values_row = self.labels_per_serial_row + 1
                 self.labels_per_serial_label = tk.Label(self, text="Copies Per Label")
-                self.labels_per_serial_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly")
+                self.labels_per_serial_dropdown = ttk.Combobox(
+                    self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly"
+                )
                 self.labels_per_serial_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
                 self.labels_per_serial_dropdown.bind("<<ComboboxSelected>>", self.toggle_multi_mode)
 
@@ -117,20 +122,25 @@ class PresetEditor(tk.Toplevel):
                     self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
                     self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
 
-                field_row += 2
+                field_row += 3
                 continue
 
             elif key == "copiesperlabel":
-                # Only add this for File presets
                 if self.preset_type == "File":
                     self.copiesperlabel_row = field_row
+                    self.file_multi_values_row = field_row + 1
                     self.copiesperlabel_label = tk.Label(self, text="Copies Per Label")
-                    self.copiesperlabel_dropdown = ttk.Combobox(self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly")
+                    self.copiesperlabel_dropdown = ttk.Combobox(
+                        self, values=[str(i) for i in range(1, 11)] + ["Multi"], state="readonly"
+                    )
                     self.copiesperlabel_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
                     self.copiesperlabel_dropdown.bind("<<ComboboxSelected>>", self.toggle_multi_mode)
                     self.copiesperlabel_label.grid(row=field_row, column=0, sticky="w", padx=10, pady=4)
                     self.copiesperlabel_dropdown.grid(row=field_row, column=1, padx=10, pady=4)
                     self.entries["copiesperlabel"] = self.copiesperlabel_dropdown
+
+                    field_row += 2
+                    continue
 
             elif key == "fontname":
                 cb = ttk.Combobox(self, values=["Arial", "Courier", "Helvetica", "Times", "Verdana"], state="readonly")
@@ -139,7 +149,10 @@ class PresetEditor(tk.Toplevel):
                 self.entries[key] = cb
 
             elif key == "fontsize":
-                cb = ttk.Combobox(self, values=["5.5", "6", "6.5", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"], state="readonly")
+                cb = ttk.Combobox(
+                    self, values=["5.5", "6", "6.5", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+                    state="readonly"
+                )
                 cb.set(str(self.preset_data.get(key, "6")))
                 cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
                 cb.grid(row=field_row, column=1, padx=10, pady=4)
@@ -154,6 +167,7 @@ class PresetEditor(tk.Toplevel):
             field_row += 1
 
         self.final_field_row = field_row
+
 
 
     def toggle_labels_per_serial(self, event=None):
@@ -215,48 +229,133 @@ class PresetEditor(tk.Toplevel):
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
-        preset.update(self._gather_entry_values())
-        preset["ui_layout"] = self._get_ui_layout()
 
-        if self.on_save:
-            self.on_save(preset, self.preset_path)
-        self.destroy()
+        # Gather widget data
+        for key, widget in self.entries.items():
+            if key == "labeltemplate":
+                display_value = widget.get()
+                internal_value = self.template_display_map.get(display_value, display_value)
+                preset[key] = internal_value
+
+            elif isinstance(widget, tk.BooleanVar):
+                preset[key] = widget.get()
+
+            elif isinstance(widget, ttk.Combobox):
+                val = widget.get()
+                preset[key] = int(val) if val.isdigit() else val
+
+            elif isinstance(widget, tk.Text):
+                val = widget.get("0.0", "end-1c")  # Keep exact text, no extra strip/rstrip unless desired
+                preset[key] = val
+
+            else:
+                try:
+                    val = widget.get()
+                    preset[key] = int(val) if val.isdigit() else val
+                except Exception:
+                    print(f"Skipping unknown widget for key: {key}")
+
+        # ✅ Save Multi values if present (File preset)
+        if hasattr(self, "copiesperlabel_dropdown"):
+            val = self.copiesperlabel_dropdown.get()
+            preset["copiesperlabel"] = int(val) if val.isdigit() else val
+            if val == "Multi" and hasattr(self, "multi_values_entry"):
+                raw = self.multi_values_entry.get()
+                preset["multi_copiesperlabel"] = raw
+
+        # ✅ Save Multi values if present (Text preset)
+        if hasattr(self, "labels_per_serial_dropdown"):
+            val = self.labels_per_serial_dropdown.get()
+            preset["labels_per_serial"] = int(val) if val.isdigit() else val
+            if val == "Multi" and hasattr(self, "multi_values_entry"):
+                raw = self.multi_values_entry.get()
+                preset["multi_labels_per_serial"] = raw
+
+        # Preserve or assign a unique preset_id
+        if self.preset_path and os.path.exists(self.preset_path):
+            with open(self.preset_path, "r") as f:
+                existing_data = json.load(f)
+                preset["preset_id"] = existing_data.get("preset_id", str(uuid.uuid4()))
+        else:
+            preset["preset_id"] = str(uuid.uuid4())
+
+        # Save UI layout (optional)
+        if self.preset_type == "Text":
+            preset["ui_layout"] = {
+                "elements": [
+                    {"type": "textbox", "id": "user_input"},
+                    {"type": "button", "id": "generate", "label": "Save Labels"},
+                ]
+            }
+        elif self.preset_type == "File":
+            preset["ui_layout"] = {
+                "elements": [
+                    {"type": "textpreview", "id": "preview_area"},
+                    {"type": "button", "id": "upload_file", "label": "Load File"},
+                    {"type": "button", "id": "generate", "label": "Save Labels"},
+                ]
+            }
+
+        # Generate filename if not provided
+        if not self.preset_path:
+            safe_name = "".join(
+                c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")
+            ).strip().replace(" ", "_")
+
+            counter = 1
+            filename = f"{safe_name}.json"
+            full_path = os.path.join("presets", filename)
+
+            while os.path.exists(full_path):
+                filename = f"{safe_name}_{counter}.json"
+                full_path = os.path.join("presets", filename)
+                counter += 1
+
+            self.preset_path = full_path
+
+        # Write to file
+        if self.preset_path:
+            os.makedirs(os.path.dirname(self.preset_path), exist_ok=True)
+            with open(self.preset_path, "w") as f:
+                json.dump(preset, f, indent=4)
+
+            messagebox.showinfo("Success", "Preset saved successfully.")
+            if self.on_save:
+                self.on_save(preset)  # pass preset to the callback
+            self.destroy()
 
     def toggle_multi_mode(self, event=None):
-        # Check if we need to show Multi for File preset
-        if hasattr(self, "copiesperlabel_dropdown") and self.copiesperlabel_dropdown.get() == "Multi":
-            self._show_multi_values_entry()
-        # Check if we need to show Multi for Incremental
-        elif hasattr(self, "labels_per_serial_dropdown") and self.labels_per_serial_dropdown.get() == "Multi":
-            self._show_multi_values_entry()
-        else:
-            self._hide_multi_values_entry()
+        # Handle File preset Multi mode
+        if hasattr(self, "copiesperlabel_dropdown"):
+            if self.copiesperlabel_dropdown.get() == "Multi":
+                self._show_multi_values_entry(self.file_multi_values_row)
+            else:
+                self._hide_multi_values_entry()
 
-    def _show_multi_values_entry(self):
-        if not hasattr(self, "multi_values_frame"):
-            # Create the placeholder frame if it doesn't exist
-            self.multi_values_frame = tk.Frame(self)
-            self.multi_values_frame.grid(row=self.final_field_row + 1, column=0, columnspan=2, padx=10, pady=4)
+        # Handle Text preset Multi mode
+        if hasattr(self, "labels_per_serial_dropdown"):
+            if self.labels_per_serial_dropdown.get() == "Multi":
+                self._show_multi_values_entry(self.text_multi_values_row)
+            else:
+                self._hide_multi_values_entry()
 
-        # Clear anything inside the frame
-        for widget in self.multi_values_frame.winfo_children():
-            widget.destroy()
+    def _show_multi_values_entry(self, target_row):
+        if not hasattr(self, "multi_values_label"):
+            self.multi_values_label = tk.Label(self, text="Multi Values (comma-separated):")
+            self.multi_values_label.grid(row=target_row, column=0, sticky="w", padx=10, pady=4)
 
-        label = tk.Label(self.multi_values_frame, text="Multi Values (comma-separated):")
-        label.pack(side="left", padx=5)
-
-        entry = tk.Entry(self.multi_values_frame, width=30)
-        entry.pack(side="left", padx=5)
-
-        self.multi_values_label = label
-        self.multi_values_entry = entry
+        if not hasattr(self, "multi_values_entry"):
+            self.multi_values_entry = tk.Entry(self, width=30)
+            self.multi_values_entry.grid(row=target_row, column=1, padx=10, pady=4)
 
     def _hide_multi_values_entry(self):
-        if hasattr(self, "multi_values_frame"):
-            for widget in self.multi_values_frame.winfo_children():
-                widget.destroy()
-            self.multi_values_label = None
-            self.multi_values_entry = None
+        if hasattr(self, "multi_values_label"):
+            self.multi_values_label.destroy()
+            del self.multi_values_label
+
+        if hasattr(self, "multi_values_entry"):
+            self.multi_values_entry.destroy()
+            del self.multi_values_entry
 
 
 
@@ -286,7 +385,47 @@ class PresetEditor(tk.Toplevel):
                 except Exception:
                     print(f"Skipping unknown widget for key: {key}")
 
+        # ✅ Explicitly capture text alignment setting
+        if "text_alignment" in self.entries:
+            alignment_value = self.entries["text_alignment"].get()
+            values["text_alignment"] = alignment_value
+
+        # ✅ Handle Multi values if present (File preset)
+        if hasattr(self, "copiesperlabel_dropdown") and self.copiesperlabel_dropdown.get() == "Multi":
+            if hasattr(self, "multi_values_entry"):
+                raw = self.multi_values_entry.get()
+                if self.validate_multi_values(raw):
+                    values["multi_copiesperlabel"] = raw
+
+
+        # ✅ Handle Multi values if present (Text preset)
+        if hasattr(self, "labels_per_serial_dropdown") and self.labels_per_serial_dropdown.get() == "Multi":
+            if hasattr(self, "multi_values_entry"):
+                raw = self.multi_values_entry.get()
+                if self.validate_multi_values(raw):
+                    values["multi_labels_per_serial"] = raw
+
+
+
         return values
+
+
+
+    def get_multi_value_list(self, raw_value):
+        """Return cleaned list of numeric strings from comma-separated input."""
+        raw_items = raw_value.split(",")
+        cleaned_list = [item.strip() for item in raw_items if item.strip().isdigit()]
+        return cleaned_list
+
+    def validate_multi_values(self, raw_value):
+        """Check if all non-empty entries are numbers; show warning if not."""
+        raw_items = raw_value.split(",")
+        invalid_items = [item.strip() for item in raw_items if item.strip() and not item.strip().isdigit()]
+        if invalid_items:
+            messagebox.showwarning("Invalid Input", f"These values are invalid: {', '.join(invalid_items)}")
+            return False
+        return True
+
 
     def _get_ui_layout(self):
         if self.preset_type == "Text":
