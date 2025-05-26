@@ -225,7 +225,7 @@ class PresetEditor(tk.Toplevel):
 
     def _create_save_button(self):
         self.save_button = tk.Button(self, text="Save Preset", command=self.save_preset)
-        self.save_button.grid(row=999, column=0, columnspan=2, pady=20)  # Replace 999 with calculated row
+        self.save_button.grid(row=self.final_field_row + 5, column=0, columnspan=2, pady=20)
 
     def save_preset(self):
         preset = {"presettype": self.preset_type}
@@ -266,10 +266,10 @@ class PresetEditor(tk.Toplevel):
         # ✅ Save Multi values if present (Text preset)
         if hasattr(self, "labels_per_serial_dropdown"):
             val = self.labels_per_serial_dropdown.get()
-            preset["labels_per_serial"] = int(val) if val.isdigit() else val
+            preset["copiesperlabel"] = int(val) if val.isdigit() else val
             if val == "Multi" and hasattr(self, "multi_values_entry"):
                 raw = self.multi_values_entry.get()
-                preset["multi_labels_per_serial"] = raw
+                preset["multi_copiesperlabel"] = raw
 
         # Preserve or assign a unique preset_id
         if self.preset_path and os.path.exists(self.preset_path):
@@ -356,59 +356,6 @@ class PresetEditor(tk.Toplevel):
         if hasattr(self, "multi_values_entry"):
             self.multi_values_entry.destroy()
             del self.multi_values_entry
-
-
-
-    def _gather_entry_values(self):
-        values = {}
-        for key, widget in self.entries.items():
-            if key == "labeltemplate":
-                display_value = widget.get()
-                internal_value = self.template_display_map.get(display_value, display_value)
-                values[key] = internal_value
-
-            elif isinstance(widget, tk.BooleanVar):
-                values[key] = widget.get()
-
-            elif isinstance(widget, ttk.Combobox):
-                val = widget.get()
-                values[key] = int(val) if val.isdigit() else val
-
-            elif isinstance(widget, tk.Text):
-                val = widget.get("0.0", "end-1c").rstrip()
-                values[key] = val
-
-            else:
-                try:
-                    val = widget.get()
-                    values[key] = int(val) if val.isdigit() else val
-                except Exception:
-                    print(f"Skipping unknown widget for key: {key}")
-
-        # ✅ Explicitly capture text alignment setting
-        if "text_alignment" in self.entries:
-            alignment_value = self.entries["text_alignment"].get()
-            values["text_alignment"] = alignment_value
-
-        # ✅ Handle Multi values if present (File preset)
-        if hasattr(self, "copiesperlabel_dropdown") and self.copiesperlabel_dropdown.get() == "Multi":
-            if hasattr(self, "multi_values_entry"):
-                raw = self.multi_values_entry.get()
-                if self.validate_multi_values(raw):
-                    values["multi_copiesperlabel"] = raw
-
-
-        # ✅ Handle Multi values if present (Text preset)
-        if hasattr(self, "labels_per_serial_dropdown") and self.labels_per_serial_dropdown.get() == "Multi":
-            if hasattr(self, "multi_values_entry"):
-                raw = self.multi_values_entry.get()
-                if self.validate_multi_values(raw):
-                    values["multi_labels_per_serial"] = raw
-
-
-
-        return values
-
 
 
     def get_multi_value_list(self, raw_value):

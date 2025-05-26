@@ -3,6 +3,7 @@ class LabelSpec:
     def __init__(self, **kwargs):
         self.presettype = kwargs.get("presettype")
         self.copiesperlabel = kwargs.get("copiesperlabel")
+        self.multi_copiesperlabel = kwargs.get("multi_copiesperlabel")
         self.textboxformatinput = kwargs.get("textboxformatinput")
         self.labeltemplate = kwargs.get("labeltemplate")
         self.fontname = kwargs.get("fontname")
@@ -22,5 +23,5 @@ class LabelSpec:
         self.row_end = kwargs.get("row_end")
         self.col_start = kwargs.get("col_start")
         self.col_end = kwargs.get("col_end")
-
+        self.pages_of_labels = kwargs.get("pages_of_labels", 1)
 

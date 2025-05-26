@@ -34,6 +34,10 @@ class CryoPopLabelStudioLite:
         self.widgets = {}
         self.selected_label_count = tk.StringVar()
 
+        self.multi_radio_frame = tk.Frame(self.body_frame)
+        self.multi_radio_frame.pack(pady=10)
+
+
 
 
     def setup_menu(self):
@@ -96,41 +100,41 @@ class CryoPopLabelStudioLite:
             self.clear_ui()
             self.build_ui_from_spec(self.current_spec.ui_layout)
 
-        # Clear old radio frame if exists
-        if hasattr(self, "multi_radio_frame"):
-            self.multi_radio_frame.destroy()
+        # ✅ Only clear the existing multi_radio_frame, never recreate it
+        if hasattr(self, "multi_radio_frame") and self.multi_radio_frame.winfo_exists():
+            for widget in self.multi_radio_frame.winfo_children():
+                widget.destroy()
 
-        # Check File preset Multi
+        # ✅ Only clear or create the pages_of_labels dropdown if needed
+        if self.current_spec.presettype == "Text" and getattr(self.current_spec, "identical_or_incremental", "") == "Incremental":
+            if not hasattr(self, "pages_of_labels_var"):
+                self.pages_of_labels_var = tk.StringVar(value="1")
+
+            if not hasattr(self, "pages_of_labels_frame") or not self.pages_of_labels_frame.winfo_exists():
+                self.pages_of_labels_frame = tk.Frame(self.body_frame)
+                self.pages_of_labels_frame.pack(pady=5)
+
+                tk.Label(self.pages_of_labels_frame, text="Pages of Labels:").pack(side="left")
+                self.pages_of_labels_dropdown = ttk.Combobox(
+                    self.pages_of_labels_frame,
+                    textvariable=self.pages_of_labels_var,
+                    values=[str(i) for i in range(1, 11)],
+                    state="readonly"
+                )
+                self.pages_of_labels_dropdown.pack(side="left", padx=5)
+            else:
+                self.pages_of_labels_var.set("1")
+                self.pages_of_labels_frame.pack(pady=5)
+        else:
+            if hasattr(self, "pages_of_labels_frame") and self.pages_of_labels_frame.winfo_exists():
+                self.pages_of_labels_frame.pack_forget()
+
+        # Check if preset uses Multi
         if getattr(self.current_spec, "copiesperlabel", "") == "Multi":
             raw_values = getattr(self.current_spec, "multi_copiesperlabel", "")
             value_list = [v.strip() for v in raw_values.split(",") if v.strip().isdigit()]
 
-            self.multi_radio_frame = tk.Frame(self.body_frame)
-            self.multi_radio_frame.pack(pady=10)
-
-            tk.Label(self.multi_radio_frame, text="Select Number of Copies:").pack(anchor="w")
-
-            for val in value_list:
-                rb = tk.Radiobutton(
-                    self.multi_radio_frame,
-                    text=val,
-                    variable=self.selected_label_count,
-                    value=val
-                )
-                rb.pack(side="left", padx=5)
-
-            if value_list:
-                self.selected_label_count.set(value_list[0])
-
-        # Check Text preset Multi
-        elif getattr(self.current_spec, "labels_per_serial", "") == "Multi":
-            raw_values = getattr(self.current_spec, "multi_labels_per_serial", "")
-            value_list = [v.strip() for v in raw_values.split(",") if v.strip().isdigit()]
-
-            self.multi_radio_frame = tk.Frame(self.body_frame)
-            self.multi_radio_frame.pack(pady=10)
-
-            tk.Label(self.multi_radio_frame, text="Select Labels Per Serial:").pack(anchor="w")
+            tk.Label(self.multi_radio_frame, text="Copies Per Label:").pack(anchor="w")
 
             for val in value_list:
                 rb = tk.Radiobutton(
@@ -145,10 +149,9 @@ class CryoPopLabelStudioLite:
                 self.selected_label_count.set(value_list[0])
 
         else:
+            # Set default single value if not Multi
             self.selected_label_count.set(
-                str(
-                    getattr(self.current_spec, "copiesperlabel", getattr(self.current_spec, "labels_per_serial", "1"))
-                )
+                str(getattr(self.current_spec, "copiesperlabel", "1"))
             )
 
         print("Preset loaded")
@@ -175,6 +178,11 @@ class CryoPopLabelStudioLite:
             self.font_label.config(text=f"Font: {spec.fontname}, {spec.fontsize}pt")
     
     def build_ui_from_spec(self, layout_data):
+        # ✅ Always reserve the multi_radio_frame early, so it stays above the buttons
+        if not hasattr(self, "multi_radio_frame") or not self.multi_radio_frame.winfo_exists():
+            self.multi_radio_frame = tk.Frame(self.body_frame)
+            self.multi_radio_frame.pack(pady=10)
+
         for element in layout_data.get("elements", []):
             etype = element["type"]
             eid = element["id"]
@@ -232,7 +240,7 @@ class CryoPopLabelStudioLite:
             self.col_end_var = tk.StringVar(value=str(labels_across))
             ttk.Combobox(last_row_frame, textvariable=self.col_end_var, values=col_range, width=5).pack(side=tk.LEFT, padx=5)
 
-        # ✅ Group buttons horizontally in a row
+        # ✅ Group buttons horizontally in a row BELOW the radio frame
         btn_row = tk.Frame(self.body_frame)
         btn_row.pack(pady=15)
 
@@ -252,20 +260,23 @@ class CryoPopLabelStudioLite:
                 self.widgets[eid] = btn
 
 
-
     def generate_labels(self):
         spec = self.current_spec
         if not spec:
             messagebox.showerror("Error", "No preset loaded.")
             return
 
-        # Handle Multi selected value
+        # ✅ Get pages of labels (for Text Incremental presets)
+        if hasattr(self, "pages_of_labels_var"):
+            pages_of_labels = int(self.pages_of_labels_var.get())
+        else:
+            pages_of_labels = 1
+        spec.pages_of_labels = pages_of_labels
+
+        # ✅ If Multi is active, overwrite spec.copiesperlabel with selected radio value
         if getattr(spec, "copiesperlabel", "") == "Multi":
             if hasattr(self, "selected_label_count"):
                 spec.copiesperlabel = int(self.selected_label_count.get())
-            else:
-                messagebox.showerror("Error", "Please select the number of copies from the Multi options.")
-                return
 
         filename_base = self.current_spec.outputfilenameprefix
 
@@ -323,7 +334,6 @@ class CryoPopLabelStudioLite:
 
         except Exception as e:
             messagebox.showerror("Error", f"Label generation failed:\n{e}")
-
 
     def upload_sample_file(self):
         path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])

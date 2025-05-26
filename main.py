@@ -79,11 +79,10 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     end_row = getattr(spec, "row_end", template_meta.get("labels_down", 99))
     start_col = getattr(spec, "col_start", 1)
     end_col = getattr(spec, "col_end", template_meta.get("labels_across", 99))
-    print("82")
+
 
     row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
-    print(row_indices)
-    print(column_indices)
+    print("85")
     if spec.partialsheet == True:
         first_page_row_indices = get_first_page_row_indices(start_row, end_row, row_indices)
 
@@ -111,7 +110,6 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
             data_list = truncate_data(data_list, spec.truncation_indices)
         
 
-
         format_function = format_labels_multi if spec.copiesperlabel > 1 else format_labels_single
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
 
@@ -132,11 +130,11 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
     
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
-        print(f"Logic: {logic}")
 
         if logic == "Identical":
             first_page_max_labels = get_max_labels_first_page(first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices)
             labeltext = text_box_input
+
             data_list = []
             for i in range(first_page_max_labels):
                 data_list.append(labeltext)
@@ -152,7 +150,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
             )
 
         elif logic == "Incremental":
-
+            num_pages = spec.pages_of_labels
             match = re.match(r"([A-Za-z0-9\-_]*?)(\d+)$", text_box_input)
             if not match:
                 messagebox.showerror("Error", "Starting serial must end in a number (e.g., AB-001)")
@@ -166,7 +164,7 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
                 count = int(spec.copiesperlabel)
             except (TypeError, ValueError):
                 count = 1
-            print(count)
+
             first_page_max_labels = get_max_labels_first_page(
                 first_page_row_indices,
                 column_indices,
@@ -174,19 +172,30 @@ def main(spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_
                 first_page_last_row_col_indices
             )
 
-            num_serials = first_page_max_labels // count
-            labels = []
+            max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
+            labelcount_additional_pages = max_labels_per_page * (num_pages - 1)
+            
+            num_serials = (first_page_max_labels + labelcount_additional_pages) // count
+            data_list = []
 
             for i in range(start, start + num_serials):
                 serial_num = f"{i:0{num_digits}d}"
                 serial = f"{prefix}{serial_num}"
                 for _ in range(count):
-                    label = spec.textboxformatinput.replace("{LABEL_TEXT}", serial)
-                    labels.append([label])
+                    label = serial
+                    data_list.append([label])
 
+            firstpage, otherpages = paginate_labels(first_page_max_labels, max_labels_per_page, data_list, 1)
 
+            pages = [firstpage]
 
-            final_doc = format_labels_firstpage_fromfile(labels, templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
+            pages = pages + otherpages
+
+            final_doc = format_labels_firstpage_fromfile(pages[0], templatepath, first_page_row_indices, column_indices, first_page_first_row_col_indices, first_page_last_row_col_indices, spec)
+
+            for page in pages[1:]:
+                next_doc = format_labels_single(page, templatepath, row_indices, column_indices, spec)
+                final_doc = combine_docs(final_doc, next_doc)
 
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")

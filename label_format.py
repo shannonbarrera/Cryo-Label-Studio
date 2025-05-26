@@ -176,8 +176,7 @@ def format_labels_single(datalist, templatepath, rowindices, columnindices, spec
     fontname = spec.fontname
     fontsize = spec.fontsize
     labeldata = 0
-    print(labelsheet)
-    print("fls")
+
 
     for rind in rowindices:
         if labeldata >= len(datalist):
@@ -185,9 +184,9 @@ def format_labels_single(datalist, templatepath, rowindices, columnindices, spec
 
         for cind in columnindices:
             if labeldata >= len(datalist):
-                print("returned")
+  
                 return labelsheet
-            print(datalist[labeldata])
+
             format_label_cell(
                 table.rows[rind].cells[cind],
                 datalist[labeldata],
@@ -197,7 +196,7 @@ def format_labels_single(datalist, templatepath, rowindices, columnindices, spec
                 spec.alignment,
             )
             labeldata += 1
-    print("done")
+
     return labelsheet
 
 
@@ -231,7 +230,7 @@ def format_labels_firstpage_fromfile(
         if labelcount >= len(data_list):
             return labelsheet
         current_cell = table.rows[first_row].cells[cind]
-        print(data_list[labelcount])
+
         format_label_cell(
             current_cell,
             data_list[labelcount],
@@ -250,7 +249,7 @@ def format_labels_firstpage_fromfile(
             for cind in column_indices:
                 if labelcount >= len(data_list):
                     return labelsheet
-                print(data_list[labelcount])
+
                 format_label_cell(
                     current_row.cells[cind],
                     data_list[labelcount],
@@ -265,7 +264,7 @@ def format_labels_firstpage_fromfile(
             if labelcount >= len(data_list):
                 return labelsheet
             current_cell = table.rows[last_row].cells[cind]
-            print(data_list[labelcount])
+   
             format_label_cell(
                 current_cell,
                 data_list[labelcount],
@@ -366,7 +365,7 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
          Doe, John
          03/29/2025"
     """
-    print("format_label_cell")
+
     if textboxformatinput:
         label_text = apply_format_to_row(textboxformatinput, data)
         cell.text = label_text
@@ -432,7 +431,7 @@ def combine_docs(doc1, doc2):
     Returns:
         Document: Combined document.
     """
-    print("called combine_docs")
+
     for element in doc2.element.body:
         doc1.element.body.append(element)
     return doc1
