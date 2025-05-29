@@ -432,6 +432,9 @@ def combine_docs(doc1, doc2):
         Document: Combined document.
     """
 
+    doc1.add_page_break()
+    
     for element in doc2.element.body:
         doc1.element.body.append(element)
+
     return doc1

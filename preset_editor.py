@@ -122,8 +122,15 @@ class PresetEditor(tk.Toplevel):
                     self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
                     self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
 
+                    # NEW: If preset saved as Multi, show entry and prefill values
+                    if str(self.preset_data.get("copiesperlabel")) == "Multi":
+                        self._show_multi_values_entry(self.text_multi_values_row)
+                        if "multi_copiesperlabel" in self.preset_data:
+                            self.multi_values_entry.insert(0, self.preset_data["multi_copiesperlabel"])
+
                 field_row += 3
                 continue
+
 
             elif key == "copiesperlabel":
                 if self.preset_type == "File":
@@ -135,6 +142,13 @@ class PresetEditor(tk.Toplevel):
                     )
                     self.copiesperlabel_dropdown.set(str(self.preset_data.get("copiesperlabel", "1")))
                     self.copiesperlabel_dropdown.bind("<<ComboboxSelected>>", self.toggle_multi_mode)
+
+                    # NEW: Show multi entry if preset was saved as 'Multi'
+                    if str(self.preset_data.get("copiesperlabel")) == "Multi":
+                        self._show_multi_values_entry(self.file_multi_values_row)
+                        if "multi_copiesperlabel" in self.preset_data:
+                            self.multi_values_entry.insert(0, self.preset_data["multi_copiesperlabel"])
+
                     self.copiesperlabel_label.grid(row=field_row, column=0, sticky="w", padx=10, pady=4)
                     self.copiesperlabel_dropdown.grid(row=field_row, column=1, padx=10, pady=4)
                     self.entries["copiesperlabel"] = self.copiesperlabel_dropdown
