@@ -155,52 +155,9 @@ def paginate_labels(
     return firstpage, pages
 
 
-def format_labels_single(datalist, templatepath, rowindices, columnindices, spec):
-    """
-    Fills a label template with one label per entry.
-
-    Args:
-        datalist (list): Data entries to be printed.
-        labelsheetloc (str): Path to the Word label template.
-        rowindices (list): List of row indices to use.
-        columnindices (list): List of column indices to use.
-        copiesperlabel (int): Number of label copies per entry.
-
-    Returns:
-        Document: Word document with formatted labels.
-    """
-    labelsheet = Document(templatepath)
-    table = labelsheet.tables[0]
-    copiesperlabel = spec.copiesperlabel
-    textboxformatinput = spec.textboxformatinput
-    fontname = spec.fontname
-    fontsize = spec.fontsize
-    labeldata = 0
 
 
-    for rind in rowindices:
-        if labeldata >= len(datalist):
-            return labelsheet
-
-        for cind in columnindices:
-            if labeldata >= len(datalist):
-  
-                return labelsheet
-
-            format_label_cell(
-                table.rows[rind].cells[cind],
-                datalist[labeldata],
-                textboxformatinput,
-                fontname,
-                fontsize,
-                spec.alignment,
-            )
-            labeldata += 1
-
-    return labelsheet
-
-
-def format_labels_firstpage_fromfile(
+def format_labels_page(
     data_list,
     templatepath,
     first_page_row_indices,
@@ -275,72 +232,14 @@ def format_labels_firstpage_fromfile(
             )
             labelcount += 1
 
+    # Add a blank paragraph + page break to separate this page (if it’s not the last one)
+    labelsheet.add_paragraph("")
+    labelsheet.add_page_break()
+
     return labelsheet
 
 
-def format_labels_multi(
-    datalist,
-    templatepath,
-    rowindices,
-    columnindices,
-    copiesperlabel,
-    textboxformatinput,
-    fontname,
-    fontsize,
-):
-    labelsheet = Document(templatepath)
-    table = labelsheet.tables[0]
-    labelcount = 0
-    maxrow_verticalfill = len(rowindices) // copiesperlabel
 
-    for i in range(maxrow_verticalfill):
-        rows_to_fill = [
-            table.rows[rowindices[i * copiesperlabel + j]].cells
-            for j in range(copiesperlabel)
-        ]
-        for cind in columnindices:
-            if labelcount >= len(datalist):
-                return labelsheet
-            for row in rows_to_fill:
-                format_label_cell(
-                    row[cind],
-                    datalist[labelcount],
-                    textboxformatinput,
-                    fontname,
-                    fontsize,
-                    spec.alignment,
-                )
-            labelcount += 1
-
-    # Write the last rows of labels
-    remainingrows = rowindices[-1] % copiesperlabel
-
-    lastrowcolumnindices = []
-    for ind in columnindices:
-        if ind % copiesperlabel == 0:
-            if (columnindices[-1] - ind) / copiesperlabel >= 1:
-                lastrowcolumnindices.append(ind)
-
-    for rind in rowindices[-remainingrows:]:
-        currentrow = table.rows[rind].cells
-        for cind in lastrowcolumnindices:
-            if labelcount >= len(datalist):
-                return labelsheet
-
-            cells_to_write = []
-            for i in range(copiesperlabel):
-                cells_to_write.append(cind + (2 * i))
-            for cell in cells_to_write:
-                format_label_cell(
-                    currentrow[cell],
-                    datalist[labelcount],
-                    textboxformatinput,
-                    fontname,
-                    fontsize,
-                    spec.alignment,
-                )
-            labelcount += 1
-    return labelsheet
 
 
 def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment):
@@ -431,9 +330,6 @@ def combine_docs(doc1, doc2):
     Returns:
         Document: Combined document.
     """
-
-    doc1.add_page_break()
-    
     for element in doc2.element.body:
         doc1.element.body.append(element)
 
