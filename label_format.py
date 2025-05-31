@@ -165,6 +165,7 @@ def format_labels_page(
     first_page_first_row_col_indices,
     first_page_last_row_col_indices,
     spec,
+    is_last_page=False  # NEW FLAG: control break on last page
 ):
     labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
@@ -177,17 +178,17 @@ def format_labels_page(
     if len(first_page_row_indices) > 2:
         middle_rows = first_page_row_indices[1:-1]
         last_row = first_page_row_indices[-1]
-
-    elif len(first_page_row_indices) <= 2:
+    else:
         middle_rows = []
         last_row = first_page_row_indices[-1]
 
     labelcount = 0
+
+    # Fill first row
     for cind in first_page_first_row_col_indices:
         if labelcount >= len(data_list):
-            return labelsheet
+            break
         current_cell = table.rows[first_row].cells[cind]
-
         format_label_cell(
             current_cell,
             data_list[labelcount],
@@ -198,30 +199,12 @@ def format_labels_page(
         )
         labelcount += 1
 
-    if labelcount >= len(data_list):
-        return labelsheet
-    if len(middle_rows) > 0:
-        for row in middle_rows:
-            current_row = table.rows[row]
-            for cind in column_indices:
-                if labelcount >= len(data_list):
-                    return labelsheet
-
-                format_label_cell(
-                    current_row.cells[cind],
-                    data_list[labelcount],
-                    textboxformatinput,
-                    fontname,
-                    fontsize,
-                    spec.alignment,
-                )
-                labelcount += 1
-    if last_row != first_row:
-        for cind in first_page_last_row_col_indices:
+    # Fill middle rows
+    for row in middle_rows:
+        for cind in column_indices:
             if labelcount >= len(data_list):
-                return labelsheet
-            current_cell = table.rows[last_row].cells[cind]
-   
+                break
+            current_cell = table.rows[row].cells[cind]
             format_label_cell(
                 current_cell,
                 data_list[labelcount],
@@ -232,9 +215,26 @@ def format_labels_page(
             )
             labelcount += 1
 
-    # Add a blank paragraph + page break to separate this page (if it’s not the last one)
-    labelsheet.add_paragraph("")
-    labelsheet.add_page_break()
+    # Fill last row (if it’s different)
+    if last_row != first_row:
+        for cind in first_page_last_row_col_indices:
+            if labelcount >= len(data_list):
+                break
+            current_cell = table.rows[last_row].cells[cind]
+            format_label_cell(
+                current_cell,
+                data_list[labelcount],
+                textboxformatinput,
+                fontname,
+                fontsize,
+                spec.alignment,
+            )
+            labelcount += 1
+
+    # Add a blank paragraph + page break if NOT the last page
+    if not is_last_page:
+        labelsheet.add_page_break()
+        print("break")
 
     return labelsheet
 

@@ -380,10 +380,13 @@ class CryoPopLabelStudioLite:
         win.title("Edit Presets")
         win.geometry("400x300")
 
-        lb = tk.Listbox(win)
+        lb = tk.Listbox(win, selectmode=tk.MULTIPLE)
         lb.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         for name in self.presets:
             lb.insert(tk.END, name)
+
+        status_label = tk.Label(win, text="", fg="green")
+        status_label.pack(pady=5)
 
         def edit_selected():
             selected = lb.curselection()
@@ -399,20 +402,29 @@ class CryoPopLabelStudioLite:
             if not selected:
                 return
             
-            if len(selected) > 1:
+            if len(selected) >= 1:
                 confirm = messagebox.askyesno("Confirm Delete", f"Delete {len(selected)} presets?")
                 if not confirm:
                     return
 
-
+            deleted_names = []
             for i in selected:
                 name = lb.get(i)
                 path, _ = self.presets[name]
                 os.remove(path)
-                messagebox.showinfo("Deleted", f"Deleted preset: {name}")
+                deleted_names.append(name)
 
-            win.destroy()
+            # Refresh listbox without closing the window
             self.load_all_presets()
+            lb.delete(0, tk.END)
+            for name in self.presets:
+                lb.insert(tk.END, name)
+
+            status_label.config(text=f"Deleted: {', '.join(deleted_names)}")
+
+            win.lift()
+            win.focus_force()
+
 
 
         btn_frame = tk.Frame(win)
@@ -424,14 +436,10 @@ class CryoPopLabelStudioLite:
         saved_id = saved_preset.get("preset_id")
         self.load_all_presets()
 
-        # Find the matching preset by ID
-        for name, (path, data) in self.presets.items():
-            if data.get("preset_id") == saved_id:
-                self.preset_dropdown.set(name)
-                break
-        else:
-            # Optional fallback: clear selection if not found
-            self.preset_dropdown.set("")
+        # Always clear selection after saving
+        self.preset_dropdown.set("")
+        self.current_spec = None  # or whatever variable holds the loaded preset
+
 
 
 

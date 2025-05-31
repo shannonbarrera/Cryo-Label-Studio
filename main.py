@@ -122,30 +122,26 @@ def main(
 
         pages = pages + otherpages
 
-        final_doc = format_labels_page(
-            pages[0],
-            templatepath,
-            first_page_row_indices,
-            column_indices,
-            first_page_first_row_col_indices,
-            first_page_last_row_col_indices,
-            spec,
-        )
-
-        for page in pages[1:]:
-            next_doc = format_labels_page(
+        for i, page in enumerate(pages):
+            is_last = (i == len(pages) - 1)
+            formatted_page = format_labels_page(
                 page,
                 templatepath,
-                row_indices,
+                first_page_row_indices if i == 0 else row_indices,
                 column_indices,
-                column_indices,
-                column_indices,
+                first_page_first_row_col_indices if i == 0 else column_indices,
+                first_page_last_row_col_indices if i == 0 else column_indices,
                 spec,
+                is_last_page=is_last  # pass this flag!
             )
-            final_doc = combine_docs(final_doc, next_doc)
 
-        save_file(output_file_path, final_doc)
-        return
+            if final_doc is None:
+                final_doc = formatted_page
+            else:
+                final_doc = combine_docs(final_doc, formatted_page)
+
+                save_file(output_file_path, final_doc)
+                return
 
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
@@ -221,28 +217,24 @@ def main(
 
             pages = pages + otherpages
 
-            final_doc = format_labels_page(
-                pages[0],
-                templatepath,
-                first_page_row_indices,
-                column_indices,
-                first_page_first_row_col_indices,
-                first_page_last_row_col_indices,
-                spec,
-            )
-
-            for page in pages[1:]:
-                next_doc = format_labels_page(
+            for i, page in enumerate(pages):
+                is_last = (i == len(pages) - 1)
+                formatted_page = format_labels_page(
                     page,
                     templatepath,
-                    row_indices,
+                    first_page_row_indices if i == 0 else row_indices,
                     column_indices,
-                    column_indices,
-                    column_indices,
+                    first_page_first_row_col_indices if i == 0 else column_indices,
+                    first_page_last_row_col_indices if i == 0 else column_indices,
                     spec,
+                    is_last_page=is_last  # pass this flag!
                 )
-                print(page[-1])
-                final_doc = combine_docs(final_doc, next_doc)
+
+                if final_doc is None:
+                    final_doc = formatted_page
+                else:
+                    final_doc = combine_docs(final_doc, formatted_page)
+
 
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")
