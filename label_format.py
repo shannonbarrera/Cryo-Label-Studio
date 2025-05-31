@@ -283,7 +283,7 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
             alignment.lower(), WD_ALIGN_PARAGRAPH.CENTER
         )
         for run in paragraph.runs:
-            run.font.size = Pt(int(fontsize))
+            run.font.size = Pt(float(fontsize))
             run.font.name = fontname
             run.bold = True
     return

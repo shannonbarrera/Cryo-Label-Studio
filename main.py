@@ -15,13 +15,9 @@ The resulting document is saved to the specified output path.
 import sys
 import re
 from label_templates import label_templates
-
-from data_extract import get_data_list_csv, get_data_list_xlsx
-
+from data_extract import get_data_list_csv
 from data_process import truncate_data
-
 from file_io import get_file_path, save_file, get_template
-
 from label_format import (
     get_row_and_column_indices,
     get_first_page_row_indices,
@@ -33,7 +29,6 @@ from label_format import (
     combine_docs,
     apply_format_to_row,
 )
-
 from label_spec import LabelSpec
 from docx import Document
 
@@ -72,7 +67,7 @@ def main(
     end_col = getattr(spec, "col_end", template_meta.get("labels_across", 99))
 
     row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
-    print("85")
+
     if spec.partialsheet == True:
         first_page_row_indices = get_first_page_row_indices(
             start_row, end_row, row_indices
@@ -92,16 +87,12 @@ def main(
     multi_pages = False
     final_doc = None
 
+
+
     if spec.presettype == "File":
-        # Load data from file based on extension
-        if input_file_path.lower().endswith(".csv"):
-            data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
-        elif input_file_path.lower().endswith((".xls", ".xlsx")):
-            data_list = get_data_list_xlsx(input_file_path, spec.textboxformatinput)
-        else:
-            raise ValueError(
-                "Unsupported file type. Please upload a .csv or .xlsx file."
-            )
+
+        data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
+
 
         # Optional truncation
         if spec.truncation_indices:

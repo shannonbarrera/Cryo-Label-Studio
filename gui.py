@@ -11,6 +11,7 @@ from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
 from data_process import is_valid_serial_format
+import re
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
@@ -54,7 +55,7 @@ class CryoPopLabelStudioLite:
     def setup_main_ui(self):
         tk.Label(self.top_frame, text="Select a Preset:", font=("Arial", 12)).pack(pady=(20, 5))
         self.preset_var = tk.StringVar()
-        self.preset_dropdown = ttk.Combobox(self.top_frame, textvariable=self.preset_var, state="readonly")
+        self.preset_dropdown = ttk.Combobox(self.top_frame, textvariable=self.preset_var, state="readonly", width=35)
         self.preset_dropdown.pack(pady=5)
         self.preset_dropdown.bind("<<ComboboxSelected>>", self.load_selected_preset)
 
@@ -129,31 +130,24 @@ class CryoPopLabelStudioLite:
             if hasattr(self, "pages_of_labels_frame") and self.pages_of_labels_frame.winfo_exists():
                 self.pages_of_labels_frame.pack_forget()
 
-        # Check if preset uses Multi
-        if getattr(self.current_spec, "copiesperlabel", "") == "Multi":
-            raw_values = getattr(self.current_spec, "multi_copiesperlabel", "")
-            value_list = [v.strip() for v in raw_values.split(",") if v.strip().isdigit()]
+        raw_input = str(getattr(self.current_spec, "copiesperlabel", "1"))
+        copies_list = parse_copiesperlabel_input(raw_input)
+        if copies_list:
+            self.selected_label_count.set(copies_list[0]) 
+            if len(copies_list) > 1:
+                tk.Label(self.multi_radio_frame, text="Copies Per Label:").pack(anchor="w")
 
-            tk.Label(self.multi_radio_frame, text="Copies Per Label:").pack(anchor="w")
+                # default to first
 
-            for val in value_list:
-                rb = tk.Radiobutton(
-                    self.multi_radio_frame,
-                    text=val,
-                    variable=self.selected_label_count,
-                    value=val
-                )
-                rb.pack(side="left", padx=5)
-
-            if value_list:
-                self.selected_label_count.set(value_list[0])
-
-        else:
-            # Set default single value if not Multi
-            self.selected_label_count.set(
-                str(getattr(self.current_spec, "copiesperlabel", "1"))
-            )
-
+                for val in copies_list:
+                    rb = tk.Radiobutton(
+                        self.multi_radio_frame,
+                        text=val,
+                        variable=self.selected_label_count,
+                        value=val
+                    )
+                    rb.pack(side="left", padx=5)
+        
         print("Preset loaded")
 
 
@@ -273,10 +267,10 @@ class CryoPopLabelStudioLite:
             pages_of_labels = 1
         spec.pages_of_labels = pages_of_labels
 
-        # ✅ If Multi is active, overwrite spec.copiesperlabel with selected radio value
-        if getattr(spec, "copiesperlabel", "") == "Multi":
-            if hasattr(self, "selected_label_count"):
-                spec.copiesperlabel = int(self.selected_label_count.get())
+        if hasattr(self, "selected_label_count"):
+            spec.copiesperlabel = int(self.selected_label_count.get())
+        
+
 
         filename_base = self.current_spec.outputfilenameprefix
 
@@ -287,11 +281,11 @@ class CryoPopLabelStudioLite:
             initial_filename = filename_base
 
         output_path = filedialog.asksaveasfilename(
-            defaultextension=".docx" if spec.outputformat.lower() == "docx" else ".pdf",
-            filetypes=[("Word Document", "*.docx"), ("PDF Document", "*.pdf")],
+            defaultextension=".docx",
+            filetypes=[("Word Document", "*.docx")],
             initialfile=initial_filename
         )
-        print(output_path)
+
         if not output_path:
             return
 
@@ -394,8 +388,19 @@ class CryoPopLabelStudioLite:
                 return
             name = lb.get(selected[0])
             path, data = self.presets[name]
-            PresetEditor(self.root, preset_data=data, preset_path=path, on_save=self.on_preset_saved)
+
+            # Call PresetEditor to open the edit window
+            editor = PresetEditor(self.root, preset_data=data, preset_path=path, on_save=self.on_preset_saved)
+
+            # NEW: If it's a File preset and has an input file path, refresh the buttons
+            if data.get("presettype") == "File" and data.get("input_file_path"):
+                self.refresh_column_buttons_from_file(
+                    data["input_file_path"],
+                    data.get("textboxformatinput", "")
+                )
+
             win.destroy()
+
 
         def delete_selected():
             selected = lb.curselection()
@@ -426,7 +431,6 @@ class CryoPopLabelStudioLite:
             win.focus_force()
 
 
-
         btn_frame = tk.Frame(win)
         btn_frame.pack(pady=5)
         tk.Button(btn_frame, text="Edit", command=edit_selected).pack(side=tk.LEFT, padx=10)
@@ -440,6 +444,24 @@ class CryoPopLabelStudioLite:
         self.preset_dropdown.set("")
         self.current_spec = None  # or whatever variable holds the loaded preset
 
+    def refresh_column_buttons_from_file(self, file_path, format_string):
+        if file_path.endswith(".csv"):
+            headers = get_data_list_csv(file_path, format_string, headers_only=True)
+        else:
+            headers = get_data_list_xlsx(file_path, format_string, headers_only=True)
+
+        # Clear previous buttons
+        for widget in self.header_buttons_frame.winfo_children():
+            widget.destroy()
+
+        # Build new buttons
+        for i, header in enumerate(headers):
+            btn = tk.Button(
+                self.header_buttons_frame,
+                text=header,
+                command=lambda h=header: self.insert_field_into_format(h)
+            )
+            btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
 
 
 
@@ -450,6 +472,21 @@ class CryoPopLabelStudioLite:
                 messagebox.showinfo("Success", "Labels generated successfully.")
             except Exception as e:
                 messagebox.showerror("Error", str(e))
+
+
+def parse_copiesperlabel_input(raw_input):
+    result = []
+    parts = [part.strip() for part in raw_input.split(",")]
+    for part in parts:
+        if "-" in part:
+            match = re.match(r"(\d+)-(\d+)", part)
+            if match:
+                start, end = map(int, match.groups())
+                result.extend([str(i) for i in range(start, end + 1)])
+        elif part.isdigit():
+            result.append(part)
+    return result
+
 
 if __name__ == "__main__":
     root = tk.Tk()
