@@ -341,13 +341,11 @@ class CryoPopLabelStudioLite:
                 else:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
 
-
                 if data_list and len(data_list) > 0:
-                    
                     preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0])
                 else:
                     preview = "No data found or invalid format."
-
+                print(preview)
                 self.widgets["preview_area"].delete("1.0", "end")
                 self.widgets["preview_area"].insert("1.0", preview)
 

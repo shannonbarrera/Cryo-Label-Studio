@@ -15,7 +15,7 @@ The resulting document is saved to the specified output path.
 import sys
 import re
 from label_templates import label_templates
-from data_extract import get_data_list_csv
+from data_extract import get_data_list_csv, get_data_list_xlsx
 from data_process import truncate_data
 from file_io import get_file_path, save_file, get_template
 from label_format import (
@@ -90,9 +90,15 @@ def main(
 
 
     if spec.presettype == "File":
-
-        data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
-
+        # Load data from file based on extension
+        if input_file_path.lower().endswith(".csv"):
+            data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
+        elif input_file_path.lower().endswith((".xls", ".xlsx")):
+            data_list = get_data_list_xlsx(input_file_path, spec.textboxformatinput)
+        else:
+            raise ValueError(
+                "Unsupported file type. Please upload a .csv or .xlsx file."
+            )
 
         # Optional truncation
         if spec.truncation_indices:

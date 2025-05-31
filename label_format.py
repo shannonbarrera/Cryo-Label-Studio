@@ -13,6 +13,7 @@ from docxcompose.composer import Composer
 import math
 
 
+
 def get_row_and_column_indices(templatepath, table_format):
     labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
@@ -239,9 +240,6 @@ def format_labels_page(
     return labelsheet
 
 
-
-
-
 def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment):
     """
     Populates a single label cell with the given data and formats it according to the label template.
@@ -289,10 +287,22 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
     return
 
 
+def parse_slice(slice_str):
+    """
+    Safely parses a slice string like [5:], [:10], [2:5] into a Python slice object.
+    """
+    match = re.match(r"\[(?:(\d*))?:(?:(\d*))?\]", slice_str)
+    if not match:
+        raise ValueError(f"Invalid slice format: {slice_str}")
+    start_str, end_str = match.groups()
+    start = int(start_str) if start_str else None
+    end = int(end_str) if end_str else None
+    return slice(start, end)
+
 def apply_format_to_row(textboxformatinput, row_data):
     """
     Applies a label format string with placeholders to a row of data.
-    Skips None values by leaving the placeholder empty and formats datetime objects.
+    Supports optional slicing like {FIELD}[2:], skips None values, formats dates.
 
     Args:
         textboxformatinput (str): A string with placeholders like "{SampleID}\n{Date}".
@@ -301,24 +311,38 @@ def apply_format_to_row(textboxformatinput, row_data):
     Returns:
         str: The formatted label string.
     """
-    placeholders = re.findall(r"{(.*?)}", textboxformatinput)
+    slice_pattern = re.compile(r"({([^}]+)}(\[[^\]]+\])?)")
     placeholder_to_value = {}
+    matches = list(slice_pattern.finditer(textboxformatinput))
 
-    for i, key in enumerate(placeholders):
+    for i, match in enumerate(matches):
+        full_placeholder = match.group(1)  # e.g., {SERUM ID}[6:]
+        key = match.group(2)               # e.g., SERUM ID
+        slice_part = match.group(3)        # e.g., [6:]
+
         if i >= len(row_data):
-            placeholder_to_value[key] = ""
+            placeholder_to_value[full_placeholder] = ""
         else:
             value = row_data[i]
             if isinstance(value, datetime):
                 value = value.strftime("%m-%d-%Y")
-            placeholder_to_value[key] = "" if value is None else str(value)
+            value = "" if value is None else str(value)
 
-    try:
-        return textboxformatinput.format(**placeholder_to_value)
-    except KeyError:
-        return ""  # Optional: log the error or return partial string instead
+            if slice_part:
+                try:
+                    slice_obj = parse_slice(slice_part)
+                    value = value[slice_obj]
+                except Exception as e:
+                    print(f"Warning: invalid slice {slice_part} on {key}: {e}")
 
+            placeholder_to_value[full_placeholder] = value
 
+    result = textboxformatinput
+    for full_placeholder, value in placeholder_to_value.items():
+        result = result.replace(full_placeholder, value)
+
+    return result
+    
 def combine_docs(doc1, doc2):
     """
     Appends all content from doc2 into doc1.
