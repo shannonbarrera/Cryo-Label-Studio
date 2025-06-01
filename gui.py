@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from label_spec import LabelSpec
@@ -69,16 +68,61 @@ class CryoPopLabelStudioLite:
             "Green": "#D3F8E2",
             "Blue": "#C6E9FB",
             "Yellow": "#F4F0CD",
-            "Purple": "#EFDAFB"
+            "Purple": "#EFDAFB",
+            "Grey": "D3D3D3"
         }
         bg = themes.get(theme_name, "white")
-        self.root.configure(bg=bg)
-        for child in self.root.winfo_children():
+
+        # Setup custom styles for ttk widgets
+        style = ttk.Style()
+        style.configure('Custom.TButton', background='white')
+        style.configure('Custom.TLabel', background=bg, foreground='black')
+        style.configure('Custom.TEntry', fieldbackground='white')
+        style.configure('Custom.TCombobox', fieldbackground='white', background='white')
+
+        def apply_bg_recursively(widget):
             try:
-                child.configure(bg=bg)
+                widget_class = widget.winfo_class()
+            except Exception:
+                return  # Skip destroyed widgets
+
+            # Skip ttk.Combobox entirely — leave system-native look
+            if isinstance(widget, ttk.Combobox) or widget_class == 'TCombobox':
+                return
+
+            # Standard Tk widgets
+            try:
+                if isinstance(widget, (tk.Button, tk.Text)):
+                    widget.configure(bg='white')
+                else:
+                    widget.configure(bg=bg)
             except:
                 pass
 
+            # ttk widgets (skip Combobox!)
+            if isinstance(widget, ttk.Button) or widget_class == 'TButton':
+                widget.configure(style='Custom.TButton')
+            elif isinstance(widget, ttk.Label) or widget_class == 'TLabel':
+                widget.configure(style='Custom.TLabel')
+            elif isinstance(widget, ttk.Entry) or widget_class == 'TEntry':
+                widget.configure(style='Custom.TEntry')
+
+            # Recurse into children
+            for child in widget.winfo_children():
+                apply_bg_recursively(child)
+
+
+
+
+        # Apply to your main body and top frames only (avoid menu bar!)
+        apply_bg_recursively(self.body_frame)
+        apply_bg_recursively(self.top_frame)
+
+        if hasattr(self, 'multi_radio_frame'):
+            apply_bg_recursively(self.multi_radio_frame)
+
+        if hasattr(self, 'pages_of_labels_frame'):
+            apply_bg_recursively(self.pages_of_labels_frame)
 
     def load_all_presets(self):
         self.presets = {}
@@ -148,14 +192,14 @@ class CryoPopLabelStudioLite:
                     )
                     rb.pack(side="left", padx=5)
         
+
+            # ✅ Apply color theme LAST, after everything is built
+        if self.current_spec and getattr(self.current_spec, "color_theme", None):
+            self.apply_color_theme(self.current_spec.color_theme)
         print("Preset loaded")
 
 
     def apply_preset_to_ui(self, spec):
-        # Apply color theme
-        if hasattr(spec, "color_theme"):
-            self.apply_color_theme(spec.color_theme)
-
         # Update status label
         
         template_id = getattr(spec, "labeltemplate", "Unknown")
@@ -342,7 +386,7 @@ class CryoPopLabelStudioLite:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
 
                 if data_list and len(data_list) > 0:
-                    preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0])
+                    preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0], self.current_spec.date_format)
                 else:
                     preview = "No data found or invalid format."
                 print(preview)

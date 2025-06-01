@@ -24,4 +24,4 @@ class LabelSpec:
         self.col_start = kwargs.get("col_start")
         self.col_end = kwargs.get("col_end")
         self.pages_of_labels = kwargs.get("pages_of_labels", 1)
-
+        self.date_format = kwargs.get("date_format")

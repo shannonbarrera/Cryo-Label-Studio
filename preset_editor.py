@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from label_templates import label_templates
 from tkinter import filedialog, messagebox, ttk
@@ -8,7 +7,25 @@ import csv
 import uuid 
 import openpyxl as xlsx
 
+DATE_FORMAT_DISPLAY_MAP = {
+    # Four-digit year formats
+    "MM-DD-YYYY": "%m-%d-%Y",
+    "DD-MM-YYYY": "%d-%m-%Y",
+    "YYYY-MM-DD": "%Y-%m-%d",
+    "MM/DD/YYYY": "%m/%d/%Y",
+    "DD/MM/YYYY": "%d/%m/%Y",
+    "YYYY/MM/DD": "%Y/%m/%d",
+    "Month DD, YYYY": "%B %d, %Y",   # January 01, 2025
+    "DD Mon YYYY": "%d %b %Y",       # 01 Jan 2025
 
+    # Two-digit year formats
+    "MM-DD-YY": "%m-%d-%y",
+    "DD-MM-YY": "%d-%m-%y",
+    "YY-MM-DD": "%y-%m-%d",
+    "MM/DD/YY": "%m/%d/%y",
+    "DD/MM/YY": "%d/%m/%y",
+    "YY/MM/DD": "%y/%m/%d"
+}
 
 class PresetEditor(tk.Toplevel):
     def __init__(self, master, preset_type="File", preset_data=None, preset_path=None, on_save=None):
@@ -56,6 +73,9 @@ class PresetEditor(tk.Toplevel):
         ]
         if self.preset_type == "Text":
             self.fields.insert(2, ("identical_or_incremental", "Logic"))
+        
+        if self.preset_type == "File":
+            self.fields.insert(3, ("date_format", "Date Format"))
 
 
     def _create_fields_ui(self):
@@ -71,7 +91,7 @@ class PresetEditor(tk.Toplevel):
                 self.entries[key] = var
 
             elif key == "color_theme":
-                cb = ttk.Combobox(self, values=["Pink", "Green", "Blue", "Yellow", "Purple"], state="readonly")
+                cb = ttk.Combobox(self, values=["Grey", "Pink", "Green", "Blue", "Yellow", "Purple"], state="readonly")
                 cb.set(self.preset_data.get(key, "Pink"))
                 cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
@@ -79,6 +99,25 @@ class PresetEditor(tk.Toplevel):
             elif key == "text_alignment":
                 cb = ttk.Combobox(self, values=["Left", "Center", "Right"], state="readonly")
                 cb.set(self.preset_data.get(key, "Center"))
+                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                self.entries[key] = cb
+
+
+            elif key == "date_format":
+                cb = ttk.Combobox(
+                    self,
+                    values=list(DATE_FORMAT_DISPLAY_MAP.keys()),
+                    state="readonly"
+                )
+
+                # Find display label that matches saved backend format
+                saved_format = self.preset_data.get(key, "%m-%d-%Y")
+                display_label = next(
+                    (label for label, fmt in DATE_FORMAT_DISPLAY_MAP.items() if fmt == saved_format),
+                    "MM-DD-YYYY"
+                )
+
+                cb.set(display_label)
                 cb.grid(row=field_row, column=1, padx=10, pady=4)
                 self.entries[key] = cb
 
@@ -221,12 +260,17 @@ class PresetEditor(tk.Toplevel):
                 internal_value = self.template_display_map.get(display_value, display_value)
                 preset[key] = internal_value
 
+            elif isinstance(widget, ttk.Combobox):
+                val = widget.get()
+                if key == "date_format":
+                    preset[key] = DATE_FORMAT_DISPLAY_MAP.get(val, "%m-%d-%Y")
+                else:
+                    preset[key] = int(val) if val.isdigit() else val
+
+
             elif isinstance(widget, tk.BooleanVar):
                 preset[key] = widget.get()
 
-            elif isinstance(widget, ttk.Combobox):
-                val = widget.get()
-                preset[key] = int(val) if val.isdigit() else val
 
             elif isinstance(widget, tk.Text):
                 val = widget.get("0.0", "end-1c")  # Keep exact text, no extra strip/rstrip unless desired

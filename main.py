@@ -16,7 +16,6 @@ import sys
 import re
 from label_templates import label_templates
 from data_extract import get_data_list_csv, get_data_list_xlsx
-from data_process import truncate_data
 from file_io import get_file_path, save_file, get_template
 from label_format import (
     get_row_and_column_indices,
@@ -27,7 +26,6 @@ from label_format import (
     paginate_labels,
     format_labels_page,
     combine_docs,
-    apply_format_to_row,
 )
 from label_spec import LabelSpec
 from docx import Document
@@ -99,10 +97,6 @@ def main(
             raise ValueError(
                 "Unsupported file type. Please upload a .csv or .xlsx file."
             )
-
-        # Optional truncation
-        if spec.truncation_indices:
-            data_list = truncate_data(data_list, spec.truncation_indices)
 
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
 

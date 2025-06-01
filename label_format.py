@@ -197,6 +197,7 @@ def format_labels_page(
             fontname,
             fontsize,
             spec.alignment,
+            spec.date_format,
         )
         labelcount += 1
 
@@ -213,6 +214,7 @@ def format_labels_page(
                 fontname,
                 fontsize,
                 spec.alignment,
+                spec.date_format,
             )
             labelcount += 1
 
@@ -229,6 +231,7 @@ def format_labels_page(
                 fontname,
                 fontsize,
                 spec.alignment,
+                spec.date_format,
             )
             labelcount += 1
 
@@ -240,7 +243,7 @@ def format_labels_page(
     return labelsheet
 
 
-def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment):
+def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment, date_format):
     """
     Populates a single label cell with the given data and formats it according to the label template.
 
@@ -264,7 +267,7 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
     """
 
     if textboxformatinput:
-        label_text = apply_format_to_row(textboxformatinput, data)
+        label_text = apply_format_to_row(textboxformatinput, data, date_format)
         cell.text = label_text
 
     else:
@@ -299,7 +302,7 @@ def parse_slice(slice_str):
     end = int(end_str) if end_str else None
     return slice(start, end)
 
-def apply_format_to_row(textboxformatinput, row_data):
+def apply_format_to_row(textboxformatinput, row_data, date_format):
     """
     Applies a label format string with placeholders to a row of data.
     Supports optional slicing like {FIELD}[2:], skips None values, formats dates.
@@ -325,7 +328,7 @@ def apply_format_to_row(textboxformatinput, row_data):
         else:
             value = row_data[i]
             if isinstance(value, datetime):
-                value = value.strftime("%m-%d-%Y")
+                value = value.strftime(date_format)
             value = "" if value is None else str(value)
 
             if slice_part:
@@ -342,7 +345,7 @@ def apply_format_to_row(textboxformatinput, row_data):
         result = result.replace(full_placeholder, value)
 
     return result
-    
+
 def combine_docs(doc1, doc2):
     """
     Appends all content from doc2 into doc1.
