@@ -37,6 +37,28 @@ class CryoPopLabelStudioLite:
         self.multi_radio_frame = tk.Frame(self.body_frame)
         self.multi_radio_frame.pack(pady=10)
 
+        self.status_var = tk.StringVar()
+        self.status_var.set("No Preset Loaded")
+
+        self.footer_bar = tk.Label(self.root, textvariable=self.status_var, bd=1, relief=tk.SUNKEN, anchor='w')
+        self.footer_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+
+    def update_footer(self, input_type=None, logic_type=None, sample_file=None, current_file=None, status="Ready"):
+        footer_parts = [
+            f"Input: {input_type or '(n/a)'}"
+        ]
+
+        # Only show logic if it's a Text Input preset and has a logic type
+        if input_type == "Text" and logic_type:
+            footer_parts.append(f"Logic: {logic_type}")
+
+        footer_parts.append(f"Sample File: {sample_file or '(none)'}")
+        footer_parts.append(f"Current File: {current_file or '(none)'}")
+        footer_parts.append(f"Status: {status}")
+
+        footer_text = "  •  ".join(footer_parts)
+        self.status_var.set(footer_text)
 
 
 
@@ -197,6 +219,15 @@ class CryoPopLabelStudioLite:
         if self.current_spec and getattr(self.current_spec, "color_theme", None):
             self.apply_color_theme(self.current_spec.color_theme)
         print("Preset loaded")
+        self.update_footer(
+            input_type=self.current_spec.presettype,
+            logic_type=getattr(self.current_spec, "identical_or_incremental", None),
+            sample_file=getattr(self.current_spec, "sample_file_name", None),
+            current_file=getattr(self, "input_file_path", None),
+            status="Preset loaded"
+        )
+
+
 
 
     def apply_preset_to_ui(self, spec):
