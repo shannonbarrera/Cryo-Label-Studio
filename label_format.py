@@ -327,10 +327,15 @@ def apply_format_to_row(textboxformatinput, row_data, date_format):
             placeholder_to_value[full_placeholder] = ""
         else:
             value = row_data[i]
-            print(value)
+
             if isinstance(value, (datetime, date)):
-                print("date time obj")
-                value = value.strftime(date_format)
+                if date_format == "Leave as is":
+                    value = str(value)  # Use raw datetime string (likely from Excel)
+                elif date_format:
+                    value = value.strftime(date_format)
+                else:
+                    value = str(value)
+
             value = "" if value is None else str(value)
 
             if slice_part:

@@ -417,9 +417,9 @@ class CryoPopLabelStudioLite:
             try:
 
                 if path.endswith(".csv"):
-                    data_list = get_data_list_csv(path, self.current_spec.textboxformatinput)
+                    data_list = get_data_list_csv(path, self.current_spec.textboxformatinput, self.current_spec.date_format)
                 else:
-                    data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
+                    data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput, self.current_spec.date_format)
                 print(data_list)
                 if data_list and len(data_list) > 0:
                     preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0], self.current_spec.date_format)

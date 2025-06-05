@@ -2,6 +2,7 @@ import re
 
 
 
+
 def is_valid_serial_format(text):
     if len(text) > 12:
         return False
@@ -12,3 +13,4 @@ def is_valid_serial_format(text):
         r'^[A-Za-z0-9]{1,5}\d{1,10}$',          # Prefix directly followed by up to 10 digits
     ]
     return any(re.fullmatch(fmt, text) for fmt in allowed_formats)
+

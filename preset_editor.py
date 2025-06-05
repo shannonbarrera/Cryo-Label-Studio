@@ -106,16 +106,20 @@ class PresetEditor(tk.Toplevel):
             elif key == "date_format":
                 cb = ttk.Combobox(
                     self,
-                    values=list(DATE_FORMAT_DISPLAY_MAP.keys()),
+                    values=["Leave as is"] + list(DATE_FORMAT_DISPLAY_MAP.keys()),
                     state="readonly"
                 )
 
                 # Find display label that matches saved backend format
-                saved_format = self.preset_data.get(key, "%m-%d-%Y")
-                display_label = next(
-                    (label for label, fmt in DATE_FORMAT_DISPLAY_MAP.items() if fmt == saved_format),
-                    "MM-DD-YYYY"
-                )
+                saved_format = self.preset_data.get(key)
+                if not saved_format:
+                    display_label = "Leave as is"
+                else:
+                    display_label = next(
+                        (label for label, fmt in DATE_FORMAT_DISPLAY_MAP.items() if fmt == saved_format),
+                        "MM-DD-YYYY"
+                    )
+
 
                 cb.set(display_label)
                 cb.grid(row=field_row, column=1, padx=10, pady=4)
@@ -263,7 +267,10 @@ class PresetEditor(tk.Toplevel):
             elif isinstance(widget, ttk.Combobox):
                 val = widget.get()
                 if key == "date_format":
-                    preset[key] = DATE_FORMAT_DISPLAY_MAP.get(val, "%m-%d-%Y")
+                    if val == "Leave as is":
+                        preset[key] = "Leave as is"  # ⬅️ Explicitly stores no format
+                    else:
+                        preset[key] = DATE_FORMAT_DISPLAY_MAP.get(val, "%m-%d-%Y")
                 else:
                     preset[key] = int(val) if val.isdigit() else val
 

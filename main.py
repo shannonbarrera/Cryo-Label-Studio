@@ -90,16 +90,16 @@ def main(
     if spec.presettype == "File":
         # Load data from file based on extension
         if input_file_path.lower().endswith(".csv"):
-            data_list = get_data_list_csv(input_file_path, spec.textboxformatinput)
+            data_list = get_data_list_csv(input_file_path, spec.textboxformatinput, spec.date_format)
         elif input_file_path.lower().endswith((".xls", ".xlsx")):
-            data_list = get_data_list_xlsx(input_file_path, spec.textboxformatinput)
+            data_list = get_data_list_xlsx(input_file_path, spec.textboxformatinput, spec.date_format)
         else:
             raise ValueError(
                 "Unsupported file type. Please upload a .csv or .xlsx file."
             )
 
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
-
+        print(max_labels_per_page)
         first_page_max_labels = get_max_labels_first_page(
             first_page_row_indices,
             column_indices,
@@ -112,7 +112,7 @@ def main(
         pages = [first_page]
 
         pages = pages + otherpages
-
+        print(pages)
         for i, page in enumerate(pages):
             is_last = (i == len(pages) - 1)
             formatted_page = format_labels_page(

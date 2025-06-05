@@ -1,8 +1,9 @@
 import openpyxl as xlsx
 import csv
 import re
+from datetime import datetime, date
 
-def get_data_list_csv(input_file_path, textboxformatinput):
+def get_data_list_csv(input_file_path, textboxformatinput, date_format=None):
     """
     Extracts label data from a CSV file using defined format string and header names.
     Skips rows where all values are empty or None.
@@ -29,9 +30,13 @@ def get_data_list_csv(input_file_path, textboxformatinput):
                     val = row[index]
                     if isinstance(val, str):
                         val = val.strip()
-                        data.append(val if val != "" else None)
-                    else:
-                        data.append(val)
+                        if val == "":
+                            data.append(None)
+                        elif date_format != "Leave as is":
+                            data.append(try_parse_date(val))
+                        else:
+                            data.append(val)
+
                 else:
                     data.append(None)
 
@@ -41,16 +46,17 @@ def get_data_list_csv(input_file_path, textboxformatinput):
     return batchdata
 
 
-def get_data_list_xlsx(input_file_path, textboxformatinput):
+def get_data_list_xlsx(input_file_path, textboxformatinput, date_format=None):
     """
     Extracts label data from an Excel (.xlsx) file.
 
     Args:
         input_file_path (str): Path to the Excel file.
         textboxformatinput (str): Column layout format using headers.
+        date_format (str or None): User-selected date format, or "Leave as is".
 
     Returns:
-        list: Extracted label data (preserves datetime objects).
+        list: Extracted label data (preserves datetime objects or raw strings).
     """
     workbook = xlsx.load_workbook(filename=input_file_path, read_only=True)
     sheet = workbook.active
@@ -58,15 +64,34 @@ def get_data_list_xlsx(input_file_path, textboxformatinput):
 
     cleaned_info = []
     for row in raw_info[1:]:  # skip header
-        cleaned_row = [
-            cell if (cell is not None and str(cell).strip() != "") else None
-            for cell in row
-        ]
+        cleaned_row = []
+        for cell in row:
+            if cell is None:
+                cleaned_row.append(None)
+            elif isinstance(cell, str):
+                stripped = cell.strip()
+                if stripped == "":
+                    cleaned_row.append(None)
+                elif date_format != "Leave as is":
+                    cleaned_row.append(try_parse_date(stripped))
+                else:
+                    cleaned_row.append(str(cell))  # Leave as-is: don't parse, just use original string
+            elif isinstance(cell, (datetime, date)):
+                if date_format == "Leave as is":
+                    cleaned_row.append(str(cell))  # 💥 This is the missing piece
+                else:
+                    cleaned_row.append(cell)  # Let formatting happen later
+            else:
+                cleaned_row.append(cell)
+  
+
+
         if any(cell is not None for cell in cleaned_row):
             cleaned_info.append(cleaned_row)
 
     workbook.close()
     return cleaned_info
+
 
 
 
@@ -108,3 +133,33 @@ def get_label_data_list_format(textboxformatinput):
     """
     findlist = re.findall(r'{(.*?)}', textboxformatinput)
     return findlist
+
+def try_parse_date(value):
+    """
+    Tries to parse a string into a date object using common formats.
+    Returns a date if successful, or the original string if not.
+    """
+    if not isinstance(value, str):
+        return value
+
+    value = value.strip()
+    if value == "":
+        return None
+
+    # Common formats you want to support
+    date_formats = [
+        "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y",
+        "%Y/%m/%d", "%m-%d-%Y", "%d-%m-%Y",
+        "%m/%d/%y", "%d/%m/%y",  # ✅ two-digit year
+        "%m-%d-%y", "%d-%m-%y",  # ✅ two-digit year with dashes
+        "%b %d, %Y", "%B %d, %Y"
+    ]
+
+
+    for fmt in date_formats:
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+
+    return value  # Return original if nothing matched
