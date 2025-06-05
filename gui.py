@@ -45,20 +45,25 @@ class CryoPopLabelStudioLite:
 
 
     def update_footer(self, input_type=None, logic_type=None, sample_file=None, current_file=None, status="Ready"):
-        footer_parts = [
-            f"Input: {input_type or '(n/a)'}"
-        ]
+        footer_parts = []
 
-        # Only show logic if it's a Text Input preset and has a logic type
-        if input_type == "Text" and logic_type:
-            footer_parts.append(f"Logic: {logic_type}")
+        if input_type == "Text":
+            footer_parts.append("Input: Text")
+            if logic_type:
+                footer_parts.append(f"Logic: {logic_type}")
+            footer_parts.append(f"Status: {status}")
 
-        footer_parts.append(f"Sample File: {sample_file or '(none)'}")
-        footer_parts.append(f"Current File: {current_file or '(none)'}")
-        footer_parts.append(f"Status: {status}")
+        elif input_type == "File":
+            footer_parts.append(f"Sample File: {sample_file or '(none)'}")
+            footer_parts.append(f"Current File: {current_file or '(none)'}")
+            footer_parts.append(f"Status: {status}")
 
-        footer_text = "  •  ".join(footer_parts)
-        self.status_var.set(footer_text)
+        else:
+            footer_parts.append("Input: Unknown")
+            footer_parts.append(f"Status: {status}")
+
+        self.status_var.set("  •  ".join(footer_parts))
+
 
 
 
@@ -218,7 +223,7 @@ class CryoPopLabelStudioLite:
             # ✅ Apply color theme LAST, after everything is built
         if self.current_spec and getattr(self.current_spec, "color_theme", None):
             self.apply_color_theme(self.current_spec.color_theme)
-        print("Preset loaded")
+
         self.update_footer(
             input_type=self.current_spec.presettype,
             logic_type=getattr(self.current_spec, "identical_or_incremental", None),
@@ -415,7 +420,7 @@ class CryoPopLabelStudioLite:
                     data_list = get_data_list_csv(path, self.current_spec.textboxformatinput)
                 else:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput)
-
+                print(data_list)
                 if data_list and len(data_list) > 0:
                     preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0], self.current_spec.date_format)
                 else:

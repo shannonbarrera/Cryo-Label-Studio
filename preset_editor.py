@@ -287,6 +287,8 @@ class PresetEditor(tk.Toplevel):
         # Save file headers if available
         if self.preset_type == "File" and hasattr(self, "current_file_headers"):
             preset["saved_headers"] = self.current_file_headers
+        if self.preset_type == "File" and hasattr(self, "sample_file_name"):
+            preset["sample_file_name"] = self.sample_file_name
 
 
         # Preserve or assign a unique preset_id
@@ -436,6 +438,7 @@ class PresetEditor(tk.Toplevel):
     def load_sample_file(self):
         path = filedialog.askopenfilename(filetypes=[("CSV or Excel files", "*.csv *.xlsx")])
         if path:
+            self.sample_file_name = os.path.basename(path)
             self.lift()
             self.focus_force()
 

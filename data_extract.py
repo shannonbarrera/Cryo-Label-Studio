@@ -4,29 +4,39 @@ import re
 
 def get_data_list_csv(input_file_path, textboxformatinput):
     """
-    Extracts label data from a CSV file using defined table coordinates and format.
+    Extracts label data from a CSV file using defined format string and header names.
+    Skips rows where all values are empty or None.
 
     Args:
         input_file_path (str): Path to the CSV file.
-        tablecoords (list): List containing two sublists with start and end [row, col] coordinates.
-        textboxformatinput (str): Format string describing column layout using letter indices.
+        textboxformatinput (str): Format string describing column layout using header names.
 
     Returns:
         list: Extracted label data.
     """
     label_data_list_format = get_label_data_list_format(textboxformatinput)
 
-    # Convert label_data_list_format into a list of indices from the row
     batchdata = []
-    with open(input_file_path, 'r') as file:
+    with open(input_file_path, 'r', encoding='utf-8') as file:
         csv_reader = list(csv.reader(file))
         columns_in_csv = csv_reader[0]
         indices_for_labeldata = [columns_in_csv.index(col) for col in label_data_list_format if col in columns_in_csv]
+
         for row in csv_reader[1:]:
             data = []
             for index in indices_for_labeldata:
-                data.append(row[index])
-            batchdata.append(data)
+                if index < len(row):
+                    val = row[index]
+                    if isinstance(val, str):
+                        val = val.strip()
+                        data.append(val if val != "" else None)
+                    else:
+                        data.append(val)
+                else:
+                    data.append(None)
+
+            if not all(val is None for val in data):
+                batchdata.append(data)
 
     return batchdata
 
@@ -37,17 +47,28 @@ def get_data_list_xlsx(input_file_path, textboxformatinput):
 
     Args:
         input_file_path (str): Path to the Excel file.
-        textboxformatinput (str): Column layout format using letters.
+        textboxformatinput (str): Column layout format using headers.
 
     Returns:
-        list: Extracted label data.
+        list: Extracted label data (preserves datetime objects).
     """
     workbook = xlsx.load_workbook(filename=input_file_path, read_only=True)
     sheet = workbook.active
-    info = extract_label_info(sheet, textboxformatinput)
-    info = [row for row in info[1:] if any(cell is not None for cell in row)]
+    raw_info = extract_label_info(sheet, textboxformatinput)
+
+    cleaned_info = []
+    for row in raw_info[1:]:  # skip header
+        cleaned_row = [
+            cell if (cell is not None and str(cell).strip() != "") else None
+            for cell in row
+        ]
+        if any(cell is not None for cell in cleaned_row):
+            cleaned_info.append(cleaned_row)
+
     workbook.close()
-    return info
+    return cleaned_info
+
+
 
 # Read the worksheet and format the label info into a list of lists
 def extract_label_info(sheet, textboxformatinput):

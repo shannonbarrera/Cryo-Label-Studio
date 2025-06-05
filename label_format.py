@@ -6,7 +6,7 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.section import WD_SECTION_START
-from datetime import datetime
+from datetime import datetime, date
 from label_templates import label_templates
 from docx.oxml.ns import qn
 from docxcompose.composer import Composer
@@ -327,7 +327,9 @@ def apply_format_to_row(textboxformatinput, row_data, date_format):
             placeholder_to_value[full_placeholder] = ""
         else:
             value = row_data[i]
-            if isinstance(value, datetime):
+            print(value)
+            if isinstance(value, (datetime, date)):
+                print("date time obj")
                 value = value.strftime(date_format)
             value = "" if value is None else str(value)
 
