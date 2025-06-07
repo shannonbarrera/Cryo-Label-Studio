@@ -6,6 +6,7 @@ import json
 import os
 from datetime import datetime
 from label_templates import label_templates
+from userguide import show_help_window, show_about_window
 from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
@@ -15,8 +16,10 @@ import re
 class CryoPopLabelStudioLite:
     def __init__(self, root):
         self.root = root
-        self.root.title("CryoPop Label Studio Lite")
-        self.root.geometry("600x500")
+        self.root.title("CryoPop Label Studio")
+        self.root.geometry("750x650+20+20")
+        self.root.resizable(False, False)  # lock resizing
+
         self.top_frame = tk.Frame(self.root)
         self.top_frame.pack(fill=tk.X)
 
@@ -30,6 +33,12 @@ class CryoPopLabelStudioLite:
 
         self.setup_menu()
         self.setup_main_ui()
+        self.welcome_frame = tk.Frame(self.top_frame)
+        self.welcome_frame.pack(expand=True)
+
+        tk.Label(self.welcome_frame, text="Welcome to CryoPop Label Studio", font=("Arial", 16, "bold")).pack(pady=(60, 10))
+        tk.Label(self.welcome_frame, text="Select a Preset to Begin", font=("Arial", 12)).pack(pady=5)
+
         self.load_all_presets()
         self.widgets = {}
         self.selected_label_count = tk.StringVar()
@@ -44,25 +53,27 @@ class CryoPopLabelStudioLite:
         self.footer_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
 
-    def update_footer(self, input_type=None, logic_type=None, sample_file=None, current_file=None, status="Ready"):
+    def update_footer(self, input_type=None, logic_type=None, sample_file=None, copies=None, status="Ready"):
         footer_parts = []
 
         if input_type == "Text":
-            footer_parts.append("Input: Text")
             if logic_type:
                 footer_parts.append(f"Logic: {logic_type}")
-            footer_parts.append(f"Status: {status}")
+            if copies is not None:
+                footer_parts.append(f"Copies Per Label: {copies}")
 
         elif input_type == "File":
             footer_parts.append(f"Sample File: {sample_file or '(none)'}")
-            footer_parts.append(f"Current File: {current_file or '(none)'}")
-            footer_parts.append(f"Status: {status}")
+            if copies is not None:
+                footer_parts.append(f"Copies Per Label: {copies}")
+
 
         else:
-            footer_parts.append("Input: Unknown")
-            footer_parts.append(f"Status: {status}")
+            footer_parts.append("Please Select a Preset")
+
 
         self.status_var.set("  •  ".join(footer_parts))
+
 
 
 
@@ -71,12 +82,22 @@ class CryoPopLabelStudioLite:
         self.menu_bar = tk.Menu(self.root)
         self.root.config(menu=self.menu_bar)
 
+        # Presets menu
         preset_menu = tk.Menu(self.menu_bar, tearoff=0)
         preset_menu.add_command(label="New File Input Preset", command=lambda: self.new_preset_window("File"))
         preset_menu.add_command(label="New Text Input Preset", command=lambda: self.new_preset_window("Text"))
         preset_menu.add_separator()
         preset_menu.add_command(label="Edit Presets", command=self.edit_presets_window)
         self.menu_bar.add_cascade(label="Presets", menu=preset_menu)
+
+        # Help menu
+        help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        help_menu.add_command(label="Help Contents", command=lambda: show_help_window(self.root))
+        help_menu.add_command(label="About", command=lambda: show_about_window(self.root))
+        self.menu_bar.add_cascade(label="Help", menu=help_menu)
+
+
+
 
     def setup_main_ui(self):
         tk.Label(self.top_frame, text="Select a Preset:", font=("Arial", 12)).pack(pady=(20, 5))
@@ -164,6 +185,9 @@ class CryoPopLabelStudioLite:
         self.preset_dropdown['values'] = list(self.presets.keys())
 
     def load_selected_preset(self, event=None):
+        if hasattr(self, "welcome_frame") and self.welcome_frame.winfo_exists():
+            self.welcome_frame.pack_forget()
+
         name = self.preset_var.get()
         if name in self.presets:
             path, data = self.presets[name]
@@ -228,8 +252,7 @@ class CryoPopLabelStudioLite:
             input_type=self.current_spec.presettype,
             logic_type=getattr(self.current_spec, "identical_or_incremental", None),
             sample_file=getattr(self.current_spec, "sample_file_name", None),
-            current_file=getattr(self, "input_file_path", None),
-            status="Preset loaded"
+            copies=getattr(self.current_spec, "copiesperlabel")
         )
 
 
@@ -270,6 +293,10 @@ class CryoPopLabelStudioLite:
                 text_box = tk.Text(self.body_frame, width=box_width, height=box_height)
                 text_box.pack()
                 self.widgets[eid] = text_box
+
+                fmt = getattr(self.current_spec, "textboxformatinput", "")
+                if self.current_spec.presettype == "Text" and fmt and "{" not in fmt and "}" not in fmt:
+                    text_box.insert("1.0", fmt)
 
             elif etype == "textpreview":
                 txt = tk.Text(self.body_frame, height=10, width=50)
@@ -380,9 +407,8 @@ class CryoPopLabelStudioLite:
 
         try:
             if spec.presettype == "Text":
-                text = self.widgets["user_input"].get("1.0", "end").strip()
-                print(text)
                 if spec.identical_or_incremental.lower() == "incremental":
+                    text = self.widgets["user_input"].get("1.0", "end").strip()
                     if not is_valid_serial_format(text):
                         messagebox.showerror(
                             "Error",
@@ -397,7 +423,7 @@ class CryoPopLabelStudioLite:
                         return 
                     main(spec, text_box_input=text, output_file_path=output_path)
                 elif spec.identical_or_incremental.lower() == "identical":
-                    text = [text]
+                    text = self.widgets["user_input"].get("1.0", "end").rstrip()
                     main(spec, text_box_input=text, output_file_path=output_path)
 
             elif spec.presettype == "File":
@@ -420,12 +446,12 @@ class CryoPopLabelStudioLite:
                     data_list = get_data_list_csv(path, self.current_spec.textboxformatinput, self.current_spec.date_format)
                 else:
                     data_list = get_data_list_xlsx(path, self.current_spec.textboxformatinput, self.current_spec.date_format)
-                print(data_list)
+
                 if data_list and len(data_list) > 0:
                     preview = apply_format_to_row(self.current_spec.textboxformatinput, data_list[0], self.current_spec.date_format)
                 else:
                     preview = "No data found or invalid format."
-                print(preview)
+
                 self.widgets["preview_area"].delete("1.0", "end")
                 self.widgets["preview_area"].insert("1.0", preview)
 

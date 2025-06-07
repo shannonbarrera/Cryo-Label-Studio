@@ -184,7 +184,6 @@ def format_labels_page(
         last_row = first_page_row_indices[-1]
 
     labelcount = 0
-
     # Fill first row
     for cind in first_page_first_row_col_indices:
         if labelcount >= len(data_list):
@@ -198,6 +197,7 @@ def format_labels_page(
             fontsize,
             spec.alignment,
             spec.date_format,
+            spec.identical_or_incremental,
         )
         labelcount += 1
 
@@ -215,6 +215,7 @@ def format_labels_page(
                 fontsize,
                 spec.alignment,
                 spec.date_format,
+                spec.identical_or_incremental,
             )
             labelcount += 1
 
@@ -232,18 +233,19 @@ def format_labels_page(
                 fontsize,
                 spec.alignment,
                 spec.date_format,
+                spec.identical_or_incremental,
             )
             labelcount += 1
-
+    '''
     # Add a blank paragraph + page break if NOT the last page
     if not is_last_page:
         labelsheet.add_page_break()
         print("break")
-
+    '''
     return labelsheet
 
 
-def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment, date_format):
+def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignment, date_format, identical_or_incremental=None):
     """
     Populates a single label cell with the given data and formats it according to the label template.
 
@@ -265,11 +267,13 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
          Doe, John
          03/29/2025"
     """
+    if identical_or_incremental != "Identical":
+        if textboxformatinput:
+            label_text = apply_format_to_row(textboxformatinput, data, date_format)
+            cell.text = label_text
 
-    if textboxformatinput:
-        label_text = apply_format_to_row(textboxformatinput, data, date_format)
-        cell.text = label_text
-
+        else:
+            cell.text = data
     else:
         cell.text = data
 

@@ -15,7 +15,6 @@ class LabelSpec:
         self.truncation_indices = kwargs.get("truncation_indices")
         self.text_box_input = kwargs.get("text_box_input")
         self.identical_or_incremental = kwargs.get("identical_or_incremental")
-        self.labels_perserial = kwargs.get("labels_perserial")
         self.color_theme = kwargs.get("color_theme")
         self.ui_layout = kwargs.get("ui_layout", {})
         self.partialsheet = kwargs.get("partialsheet")
@@ -25,4 +24,4 @@ class LabelSpec:
         self.col_end = kwargs.get("col_end")
         self.pages_of_labels = kwargs.get("pages_of_labels", 1)
         self.date_format = kwargs.get("date_format")
-        self.sample_file_name = kwargs.get("sample_file_name")
+        self.sample_file_name = kwargs.get("sample_file_name", None)

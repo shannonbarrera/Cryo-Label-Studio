@@ -54,7 +54,7 @@ def main(
     Returns:
         None. The final document is saved to disk.
     """
-    print("main called")
+
     template_meta = label_templates[spec.labeltemplate]
     templatepath = template_meta["template_path"]
     labeltemplateexample = Document(templatepath)
@@ -99,7 +99,7 @@ def main(
             )
 
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
-        print(max_labels_per_page)
+
         first_page_max_labels = get_max_labels_first_page(
             first_page_row_indices,
             column_indices,
@@ -112,7 +112,7 @@ def main(
         pages = [first_page]
 
         pages = pages + otherpages
-        print(pages)
+
         for i, page in enumerate(pages):
             is_last = (i == len(pages) - 1)
             formatted_page = format_labels_page(
@@ -138,20 +138,27 @@ def main(
         logic = spec.identical_or_incremental
 
         if logic == "Identical":
+            labeltext = text_box_input
+
+            try:
+                count = int(spec.copiesperlabel)
+            except (TypeError, ValueError):
+                count = 1
+
+            data_list = [labeltext] * count
+
             first_page_max_labels = get_max_labels_first_page(
                 first_page_row_indices,
                 column_indices,
                 first_page_first_row_col_indices,
                 first_page_last_row_col_indices,
             )
-            labeltext = text_box_input
-
-            data_list = []
-            for i in range(first_page_max_labels):
-                data_list.append(labeltext)
+            max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
+            
+            pages = [*paginate_labels(first_page_max_labels, max_labels_per_page, data_list, 1)]
 
             final_doc = format_labels_page(
-                data_list,
+                pages[0],
                 templatepath,
                 first_page_row_indices,
                 column_indices,
@@ -159,6 +166,20 @@ def main(
                 first_page_last_row_col_indices,
                 spec,
             )
+
+            for page in pages[1:]:
+                if len(page) > 0:
+                    next_doc = format_labels_page(
+                        page,
+                        templatepath,
+                        row_indices,
+                        column_indices,
+                        column_indices,
+                        column_indices,
+                        spec,
+                    )
+                    final_doc = combine_docs(final_doc, next_doc)
+
 
         elif logic == "Incremental":
             num_pages = spec.pages_of_labels

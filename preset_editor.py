@@ -40,6 +40,7 @@ class PresetEditor(tk.Toplevel):
 
         self._setup_window()
         self._init_template_maps()
+
         self._define_fields()
         self._create_fields_ui()
         self._handle_format_input_section()
@@ -52,7 +53,10 @@ class PresetEditor(tk.Toplevel):
     def _setup_window(self):
         title = ("Edit " if self.preset_data else "New ") + ("Text Input Preset" if self.preset_type == "Text" else "File Input Preset")
         self.title(title)
-        # self.geometry("550x600")
+        if self.preset_type == "Text":
+            self.geometry("500x655+70+1") 
+        else:
+            self.geometry("500x745+70+1")
 
     def _init_template_maps(self):
         self.template_display_map = {v["display_name"]: k for k, v in label_templates.items()}
@@ -472,7 +476,7 @@ class PresetEditor(tk.Toplevel):
 
             # Set up an inner frame with a fixed width that will be centered by pack
             grid_frame = tk.Frame(self.header_buttons_frame, width=400)
-            grid_frame.pack(pady=10)
+            grid_frame.pack(pady=3)
             grid_frame.pack_propagate(False)  # Prevent it from shrinking to fit
 
             # Grid buttons inside that fixed-size frame
@@ -482,7 +486,7 @@ class PresetEditor(tk.Toplevel):
                     text=header,
                     command=lambda h=header: self.insert_field(h)
                 )
-                btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
+                btn.grid(row=i // 3, column=i % 3, padx=5, pady=3)
 
 
 
