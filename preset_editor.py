@@ -32,6 +32,7 @@ class PresetEditor(tk.Toplevel):
         super().__init__(master)
         self.preset_type = self._resolve_type(preset_type, preset_data)
         self.preset_data = preset_data or {}
+        self.sample_file_name = self.preset_data.get("sample_filename")
         self.preset_path = preset_path
         self.on_save = on_save
         self.entries = {}
@@ -47,11 +48,13 @@ class PresetEditor(tk.Toplevel):
         self._create_save_button()
         self.update_textbox_size()
 
+
+
     def _resolve_type(self, preset_type, preset_data):
         return preset_data.get("presettype") if preset_data and "presettype" in preset_data else preset_type
 
     def _setup_window(self):
-        title = ("Edit " if self.preset_data else "New ") + ("Text Input Preset" if self.preset_type == "Text" else "File Input Preset")
+        title = ("Text Input Preset Editor" if self.preset_type == "Text" else "File Input Preset Editor")
         self.title(title)
         if self.preset_type == "Text":
             self.geometry("500x655+70+1") 
@@ -179,17 +182,6 @@ class PresetEditor(tk.Toplevel):
         self.final_field_row = field_row
 
 
-
-    def toggle_labels_per_serial(self, event=None):
-
-        if self.entries["identical_or_incremental"].get() == "Incremental":
-            self.labels_per_serial_label.grid(row=self.labels_per_serial_row, column=0, sticky="w", padx=10, pady=4)
-            self.labels_per_serial_dropdown.grid(row=self.labels_per_serial_row, column=1, padx=10, pady=4)
-        else:
-            self.labels_per_serial_label.grid_remove()
-            self.labels_per_serial_dropdown.grid_remove()
-
-
     def _handle_format_input_section(self):
         # Start below the last fields row
         format_row = self.final_field_row
@@ -249,9 +241,21 @@ class PresetEditor(tk.Toplevel):
             def insert_label_text():
                 self.format_entry.insert(tk.INSERT, "{LABEL_TEXT}")
 
-            insert_button = tk.Button(self, text="{LABEL_TEXT}", command=insert_label_text)
-            insert_button.grid(row=format_row, column=1, sticky="w", padx=10, pady=(0, 10))
+            self.insert_button = tk.Button(self, text="{LABEL_TEXT}", command=insert_label_text)
+            self.insert_button.grid(row=format_row, column=1, sticky="w", padx=10, pady=(0, 10))
 
+            def update_insert_button_state(event=None):
+                logic_value = self.entries.get("identical_or_incremental").get()
+                if logic_value == "Incremental":
+                    self.insert_button.config(state="normal")
+                else:
+                    self.insert_button.config(state="disabled")
+
+            # Set initial state
+            update_insert_button_state()
+
+            # Bind logic selector to update the state dynamically
+            self.entries["identical_or_incremental"].bind("<<ComboboxSelected>>", update_insert_button_state)
 
 
     def _create_save_button(self):
@@ -327,6 +331,9 @@ class PresetEditor(tk.Toplevel):
                 ]
             }
 
+            preset["sample_filename"] = self.sample_file_name or self.preset_data.get("sample_filename", "")
+
+
         # Generate filename if not provided
         if not self.preset_path:
             safe_name = "".join(
@@ -354,55 +361,6 @@ class PresetEditor(tk.Toplevel):
             if self.on_save:
                 self.on_save(preset)  # pass preset to the callback
             self.destroy()
-
-    def toggle_multi_mode(self, event=None):
-        # Handle File preset Multi mode
-        if hasattr(self, "copiesperlabel_dropdown"):
-            if self.copiesperlabel_dropdown.get() == "Multi":
-                self._show_multi_values_entry(self.file_multi_values_row)
-            else:
-                self._hide_multi_values_entry()
-
-        # Handle Text preset Multi mode
-        if hasattr(self, "labels_per_serial_dropdown"):
-            if self.labels_per_serial_dropdown.get() == "Multi":
-                self._show_multi_values_entry(self.text_multi_values_row)
-            else:
-                self._hide_multi_values_entry()
-
-    def _show_multi_values_entry(self, target_row):
-        if not hasattr(self, "multi_values_label"):
-            self.multi_values_label = tk.Label(self, text="Multi Values (comma-separated):")
-            self.multi_values_label.grid(row=target_row, column=0, sticky="w", padx=10, pady=4)
-
-        if not hasattr(self, "multi_values_entry"):
-            self.multi_values_entry = tk.Entry(self, width=30)
-            self.multi_values_entry.grid(row=target_row, column=1, padx=10, pady=4)
-
-    def _hide_multi_values_entry(self):
-        if hasattr(self, "multi_values_label"):
-            self.multi_values_label.destroy()
-            del self.multi_values_label
-
-        if hasattr(self, "multi_values_entry"):
-            self.multi_values_entry.destroy()
-            del self.multi_values_entry
-
-
-    def get_multi_value_list(self, raw_value):
-        """Return cleaned list of numeric strings from comma-separated input."""
-        raw_items = raw_value.split(",")
-        cleaned_list = [item.strip() for item in raw_items if item.strip().isdigit()]
-        return cleaned_list
-
-    def validate_multi_values(self, raw_value):
-        """Check if all non-empty entries are numbers; show warning if not."""
-        raw_items = raw_value.split(",")
-        invalid_items = [item.strip() for item in raw_items if item.strip() and not item.strip().isdigit()]
-        if invalid_items:
-            messagebox.showwarning("Invalid Input", f"These values are invalid: {', '.join(invalid_items)}")
-            return False
-        return True
 
 
     def _get_ui_layout(self):
@@ -452,6 +410,8 @@ class PresetEditor(tk.Toplevel):
             self.sample_file_name = os.path.basename(path)
             self.lift()
             self.focus_force()
+            self.preset_data["sample_filename"] = self.sample_file_name
+
 
             # Get headers based on file extension
             if path.lower().endswith(".csv"):

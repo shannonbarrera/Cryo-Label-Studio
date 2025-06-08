@@ -143,7 +143,14 @@ def main(
             try:
                 count = int(spec.copiesperlabel)
             except (TypeError, ValueError):
-                count = 1
+                # Fill the page if copiesperlabel is blank or invalid
+                count = get_max_labels_first_page(
+                    first_page_row_indices,
+                    column_indices,
+                    first_page_first_row_col_indices,
+                    first_page_last_row_col_indices
+                )
+
 
             data_list = [labeltext] * count
 
