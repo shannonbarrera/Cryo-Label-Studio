@@ -137,7 +137,7 @@ class CryoPopLabelStudioLite:
         """
         Build the initial main user interface, including the preset dropdown and status label.
         """
-
+        # Preset Selector Dropdown
         tk.Label(self.top_frame, text="Select a Preset:", font=("Arial", 12)).pack(pady=(20, 5))
         self.preset_var = tk.StringVar()
         self.preset_dropdown = ttk.Combobox(self.top_frame, textvariable=self.preset_var, state="readonly", width=35)
@@ -183,7 +183,7 @@ class CryoPopLabelStudioLite:
             if isinstance(widget, ttk.Combobox) or widget_class == 'TCombobox':
                 return
 
-            # Standard Tk widgets
+            # Make buttons white.
             try:
                 if isinstance(widget, (tk.Button, tk.Text)):
                     widget.configure(bg='white')
@@ -221,7 +221,6 @@ class CryoPopLabelStudioLite:
         """
         Load all saved presets from disk into the preset dropdown.
         """
-
         self.presets = {}
         if os.path.exists(self.presets_dir):
             for file in os.listdir(self.presets_dir):
@@ -319,8 +318,6 @@ class CryoPopLabelStudioLite:
 
 
 
-
-
     def apply_preset_to_ui(self, spec):
         """
         Update UI elements to reflect the values in a given LabelSpec.
@@ -372,7 +369,7 @@ class CryoPopLabelStudioLite:
                     box_width = template.get("chars_per_line", 45)
                     box_height = template.get("lines_per_label", 6)
 
-                # 🧠 Add description label based on preset type and logic
+                #Add description label based on preset type and logic
                 label_text = "Label Text:"  # default
                 if self.current_spec.presettype == "Text":
                     logic = getattr(self.current_spec, "identical_or_incremental", "").lower()
@@ -440,7 +437,7 @@ class CryoPopLabelStudioLite:
             self.col_end_var = tk.StringVar(value=str(labels_across))
             ttk.Combobox(last_row_frame, textvariable=self.col_end_var, values=col_range, width=5).pack(side=tk.LEFT, padx=5)
 
-        # ✅ Group buttons horizontally in a row BELOW the radio frame
+        # Group buttons horizontally in a row BELOW the radio frame
         btn_row = tk.Frame(self.body_frame)
         btn_row.pack(pady=15)
 
@@ -471,7 +468,7 @@ class CryoPopLabelStudioLite:
             messagebox.showerror("Error", "No preset loaded.")
             return
 
-        # ✅ Get pages of labels (for Text Incremental presets)
+        # Get pages of labels (for Text Incremental presets)
         if hasattr(self, "pages_of_labels_var"):
             pages_of_labels = int(self.pages_of_labels_var.get())
         else:

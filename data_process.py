@@ -1,8 +1,6 @@
 import re
 
 
-
-
 def is_valid_serial_format(text):
     if len(text) > 12:
         return False

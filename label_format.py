@@ -278,9 +278,9 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
         cell.text = data
 
     alignment_map = {
-        "Left": WD_ALIGN_PARAGRAPH.LEFT,
-        "Center": WD_ALIGN_PARAGRAPH.CENTER,
-        "Right": WD_ALIGN_PARAGRAPH.RIGHT,
+        "left": WD_ALIGN_PARAGRAPH.LEFT,
+        "center": WD_ALIGN_PARAGRAPH.CENTER,
+        "right": WD_ALIGN_PARAGRAPH.RIGHT,
     }
 
     for paragraph in cell.paragraphs:

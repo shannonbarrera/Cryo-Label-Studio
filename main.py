@@ -131,8 +131,8 @@ def main(
             else:
                 final_doc = combine_docs(final_doc, formatted_page)
 
-                save_file(output_file_path, final_doc)
-                return
+        save_file(output_file_path, final_doc)
+        return
 
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
@@ -192,9 +192,6 @@ def main(
             num_pages = spec.pages_of_labels
             match = re.match(r"([A-Za-z0-9\-_]*?)(\d+)$", text_box_input)
             if not match:
-                messagebox.showerror(
-                    "Error", "Starting serial must end in a number (e.g., AB-001)"
-                )
                 return
 
             prefix, start_num = match.groups()

@@ -5,22 +5,27 @@ import markdown
 
 main_page_overview = """**Main Window Overview**
 
-The Main Window is where you interact with your currently selected **Preset** to generate labels.  
-A Preset is a saved set of instructions that tells the app how to format and create your labels.  
+The Main Window is where you interact with your currently selected **Preset** to generate labels.<br>  
+A Preset is a saved set of instructions that tells the app how to format and create your labels.  <br>
 When you select a preset from the dropdown, the page will automatically update based on the preset type.
 
 ---
 
-**Label Template**  
+**Label Template**  <br>
 Displays the selected label layout. This determines size and spacing of the labels.
 
-**Quantity Radio Buttons**  
-If multiple quantities were configured in the preset (e.g. 1, 3, 5 labels per sample), they appear as radio buttons.  
+**Quantity Radio Buttons**  <br>
+If multiple quantities were configured in the preset (e.g. 1, 3, 5 labels per sample), they appear as radio buttons.  <br>
 Choose one to select the quantity of each label. 
 
-**Text Input Box** *(For Text Input Presets only)*  
-- **Identical**: Input the text which will appear on each label. The box is prefilled with the text entered in the preset editor.  
-- **Incremental**: Input the starting value for an incrementing sequence.
+**Text Input Box** *(For Text Input Presets only)*  <br>
+- **Identical**: Input the text which will appear on each label. The box is prefilled with the text entered in the preset editor.  <br>
+- **Incremental**: Input the starting value for an incrementing sequence.<br>
+Supported Serial Number Formats (12 digits maximum):<br>
+  • Numbers only (e.g., 1234)<br>
+  • Prefix (1–5 letters/numbers) + dash + digits (e.g., ab-123)<br>
+  • Prefix + underscore + digits (e.g., xy_0999)<br>
+  • Prefix (letters only) + digits (e.g., ab0001)<br>
 
 **First Label Preview Box** *(For File Input Presets only)*  
 When a file is loaded, this box displays a preview of the text for the first label.
@@ -201,7 +206,7 @@ Click this to save the preset and close the editor window.
 HELP_CONTENT = {
     "Main Window Overview": main_page_overview,
     "File Input Preset Editor": file_input_presets,
-    "Text Input Presets": text_input_presets,
+    "Text Input Preset Editor": text_input_presets,
     "Troubleshooting & Tips": "Common issues include invalid format strings, missing fields, or misaligned labels...\n...",
     "About": "CryoPop Label Studio v1.0\nCreated by Shannon Barrera\ncryopopsoftware.com",
 }
