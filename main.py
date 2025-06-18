@@ -15,12 +15,13 @@ The resulting document is saved to the specified output path.
 import sys
 import re
 from label_templates import label_templates
-from data_extract import get_data_list_csv, get_data_list_xlsx
+from data_extract import get_data_list_csv, get_data_list_xlsx, remove_duplicate_labels
 from file_io import get_file_path, save_file, get_template
 from label_format import (
     get_row_and_column_indices,
     get_first_page_row_indices,
     get_first_page_col_indices,
+    smart_wrap_label_text,
     get_max_labels_per_page,
     get_max_labels_first_page,
     paginate_labels,
@@ -29,6 +30,8 @@ from label_format import (
 )
 from label_spec import LabelSpec
 from docx import Document
+from data_process import estimate_max_chars
+
 
 
 def main(
@@ -97,6 +100,10 @@ def main(
             raise ValueError(
                 "Unsupported file type. Please upload a .csv or .xlsx file."
             )
+        
+        if spec.remove_duplicates == True:
+            data_list = remove_duplicate_labels(data_list)
+
 
         max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
 
@@ -217,12 +224,15 @@ def main(
 
             num_serials = (first_page_max_labels + labelcount_additional_pages) // count
             data_list = []
-
+            label_width = template_meta["label_width"]
+            font_size = spec.fontsize
+            font_name = "Arial"
+            max_chars = estimate_max_chars(label_width, font_size, font_name)
             for i in range(start, start + num_serials):
                 serial_num = f"{i:0{num_digits}d}"
                 serial = f"{prefix}{serial_num}"
                 for _ in range(count):
-                    label = serial
+                    label = smart_wrap_label_text(serial, max_chars, prefix)                 
                     data_list.append([label])
 
             firstpage, otherpages = paginate_labels(

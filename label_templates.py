@@ -2,6 +2,7 @@ label_templates = {
     "LCRY-1700": {
         "display_name": "Cryo-Babies 1.28 x 0.50",
         "template_path": "templates/LCRY-1700.docx",
+        "label_width": 1.28,
         "labels_across": 5,
         "labels_down": 17,
         "chars_per_line": 45,
@@ -13,6 +14,7 @@ label_templates = {
     "LCRY-1200": {
         "display_name": "Cryo-Tags 1.50 x 0.75",
         "template_path": "templates/LCRY-1200.docx",
+        "label_width": 1.50,
         "labels_across": 5,
         "labels_down": 12,
         "chars_per_line": 45,
@@ -23,6 +25,7 @@ label_templates = {
     "LCRY-2380": {
         "display_name": "Cryo-Babies 0.94 x 0.50",
         "template_path": "templates/LCRY-2380.docx",
+        "label_width": 0.94,
         "labels_across": 7,
         "labels_down": 17,
         "chars_per_line": 45,
@@ -33,6 +36,7 @@ label_templates = {
     "LCRY-1100": {
         "display_name": "Cryo-Tags 1.69 x 0.75",
         "template_path": "templates/LCRY-1100.docx",
+        "label_width": 1.69,
         "labels_across": 4,
         "labels_down": 13,
         "chars_per_line": 45,
@@ -43,6 +47,7 @@ label_templates = {
     "LCRY-1258": {
         "display_name": "Cryo-Tags 2.625 x 1.0",
         "template_path": "templates/LCRY-1258.docx",
+        "label_width": 2.625,
         "labels_across": 3,
         "labels_down": 10,
         "chars_per_line": 45,
@@ -54,6 +59,7 @@ label_templates = {
     "SIDE-1000": {
         "display_name": "Sidewall Cryo-Tags 1.50 x 0.25",
         "template_path": "templates/SIDE-1000.docx",
+        "label_width": 1.50,
         "labels_across": 4,
         "labels_down": 39,
         "chars_per_line": 45,
@@ -64,6 +70,7 @@ label_templates = {
     "SPOT-1000": {
         "display_name": "Tough-Spots 3/8 in",
         "template_path": "templates/SPOT-1000.docx",
+        "label_width": 0.375,
         "labels_across": 12,
         "labels_down": 16,
         "chars_per_line": 27,
@@ -74,6 +81,7 @@ label_templates = {
     "SPOT-2000": {
         "display_name": "Tough-Spots 1/2 in",
         "template_path": "templates/SPOT-2000.docx",
+        "label_width": 0.5,
         "labels_across": 12,
         "labels_down": 16,
         "chars_per_line": 27,
@@ -84,6 +92,7 @@ label_templates = {
     "SPOT-3000": {
         "display_name": "Tough-Spots 3/4 in",
         "template_path": "templates/SPOT-3000.docx",
+        "label_width": 0.75,
         "labels_across": 9,
         "labels_down": 12,
         "chars_per_line": 27,
@@ -94,6 +103,7 @@ label_templates = {
     "SPOT-4000": {
         "display_name": "Tough-Spots 1.00 in",
         "template_path": "templates/SPOT-4000.docx",
+        "label_width": 1.0,
         "labels_across": 7,
         "labels_down": 9,
         "chars_per_line": 27,
@@ -104,6 +114,7 @@ label_templates = {
     "SPOT-5000": {
         "display_name": "Tough-Spots 7/16 in",
         "template_path": "templates/SPOT-5000.docx",
+        "label_width": 0.4375,
         "labels_across": 13,
         "labels_down": 18,
         "chars_per_line": 27,

@@ -10,8 +10,8 @@ from userguide import show_help_window
 from preset_editor import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
-from data_process import is_valid_serial_format
-import re
+from data_process import is_valid_serial_format, parse_copiesperlabel_input
+from preset_editor.file_helpers import get_csv_headers, get_xlsx_headers
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
@@ -24,7 +24,7 @@ class CryoPopLabelStudioLite:
 
         self.root = root
         self.root.title("CryoPop Label Studio")
-        self.root.geometry("750x650+20+20")
+        self.root.geometry("600x650+20+20")
         self.root.resizable(False, False)  # lock resizing
 
         self.top_frame = tk.Frame(self.root)
@@ -305,7 +305,7 @@ class CryoPopLabelStudioLite:
         self.update_footer(
             input_type=self.current_spec.presettype,
             logic_type=getattr(self.current_spec, "identical_or_incremental", None),
-            sample_file=getattr(self.current_spec, "sample_file_name", None),
+            sample_file=getattr(self.current_spec, "sample_filename", None),
             copies=self.selected_label_count.get()
         )
 
@@ -567,14 +567,9 @@ class CryoPopLabelStudioLite:
         Remove all dynamically generated UI widgets from the main window.
         """
 
-        for widget in self.root.winfo_children():
-            for widget in self.body_frame.winfo_children():
-                widget.destroy()
-        for widget in self.widgets.values():
-            try:
-                widget.destroy()
-            except:
-                pass
+        for widget in self.body_frame.winfo_children():
+            widget.destroy()
+
         self.widgets.clear()
 
     def new_preset_window(self, preset_type):
@@ -685,9 +680,9 @@ class CryoPopLabelStudioLite:
         """
 
         if file_path.endswith(".csv"):
-            headers = get_data_list_csv(file_path, format_string, headers_only=True)
+            headers = get_csv_headers(file_path)
         else:
-            headers = get_data_list_xlsx(file_path, format_string, headers_only=True)
+            headers = get_xlsx_headers(file_path)
 
         # Clear previous buttons
         for widget in self.header_buttons_frame.winfo_children():
@@ -702,33 +697,6 @@ class CryoPopLabelStudioLite:
             )
             btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
 
-
-def parse_copiesperlabel_input(raw_input):
-    """
-    Parse a string representing label copy counts into a list of individual values.
-
-    Supports:
-    - Single numbers (e.g., "1")
-    - Comma-separated lists (e.g., "1, 2, 3")
-    - Ranges using dashes (e.g., "1-3")
-
-    Args:
-        raw_input (str): The raw input string to parse.
-
-    Returns:
-        list of str: A list of individual copy count strings.
-    """
-    result = []
-    parts = [part.strip() for part in raw_input.split(",")]
-    for part in parts:
-        if "-" in part:
-            match = re.match(r"(\d+)-(\d+)", part)
-            if match:
-                start, end = map(int, match.groups())
-                result.extend([str(i) for i in range(start, end + 1)])
-        elif part.isdigit():
-            result.append(part)
-    return result
 
 
 if __name__ == "__main__":

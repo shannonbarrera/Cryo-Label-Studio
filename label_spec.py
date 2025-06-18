@@ -24,4 +24,5 @@ class LabelSpec:
         self.col_end = kwargs.get("col_end")
         self.pages_of_labels = kwargs.get("pages_of_labels", 1)
         self.date_format = kwargs.get("date_format")
-        self.sample_file_name = kwargs.get("sample_filename", None)
+        self.sample_filename = kwargs.get("sample_filename", None)
+        self.remove_duplicates = kwargs.get("remove_duplicates")

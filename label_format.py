@@ -156,8 +156,6 @@ def paginate_labels(
     return firstpage, pages
 
 
-
-
 def format_labels_page(
     data_list,
     templatepath,
@@ -292,6 +290,40 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
             run.font.name = fontname
             run.bold = True
     return
+
+import re
+
+def smart_wrap_label_text(label_text, max_chars, prefix=None, buffer=3):
+    """
+    Inserts a line break after the prefix if the label is close to overflowing.
+
+    Args:
+        label_text (str): The full label string
+        max_chars (int): Max characters allowed per line
+        prefix (str, optional): The known prefix (will use len(prefix))
+        prefix_len (int, optional): If no prefix string, supply character length directly
+        buffer (int): Number of chars before max to trigger wrapping
+
+    Returns:
+        str: Wrapped label text with newline inserted after prefix (if needed)
+    """
+    if len(label_text) <= max_chars - buffer:
+        return label_text
+
+
+    if prefix is not None:
+        prefix_len = len(prefix)
+        # Insert \n after prefix
+        return label_text[:prefix_len] + "\n" + label_text[prefix_len:]
+    
+    # Otherwise split at last space before limit
+    last_space = label_text.rfind(" ", 0, max_chars - buffer)
+    if last_space != -1:
+        return label_text[:last_space] + "\n" + label_text[last_space+1:]
+
+    # Fallback: force break
+    return label_text[:max_chars - buffer] + "\n" + label_text[max_chars - buffer:]
+
 
 
 def parse_slice(slice_str):

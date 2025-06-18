@@ -163,3 +163,14 @@ def try_parse_date(value):
             continue
 
     return value  # Return original if nothing matched
+
+
+def remove_duplicate_labels(data_list):
+    seen = set()
+    unique_data = []
+    for row in data_list:
+        row_tuple = tuple(row)
+        if row_tuple not in seen:
+            seen.add(row_tuple)
+            unique_data.append(row)
+    return unique_data
