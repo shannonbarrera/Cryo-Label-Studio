@@ -75,12 +75,12 @@ def get_data_list_xlsx(input_file_path, textboxformatinput, date_format=None):
                 elif date_format != "Leave as is":
                     cleaned_row.append(try_parse_date(stripped))
                 else:
-                    cleaned_row.append(str(cell))  # Leave as-is: don't parse, just use original string
+                    cleaned_row.append(str(cell)) 
             elif isinstance(cell, (datetime, date)):
                 if date_format == "Leave as is":
-                    cleaned_row.append(str(cell))  # 💥 This is the missing piece
+                    cleaned_row.append(str(cell))  
                 else:
-                    cleaned_row.append(cell)  # Let formatting happen later
+                    cleaned_row.append(cell)  
             else:
                 cleaned_row.append(cell)
   

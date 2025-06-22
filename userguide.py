@@ -172,6 +172,9 @@ Choose **Left**, **Center**, or **Right** alignment for your label text.
 Enter a default filename to be suggested when saving your labels.  
 This helps save time and keeps files organized.
 
+**Remove Duplicate Labels**
+Check this box to make sure that if there are multiple lines in your spreadsheet that result in identical labels, only one set of each label will be generated.
+
 **Add Datetime Stamp to Filename**  
 Enable this to automatically append the current date and time to the suggested filename when saving.  
 This ensures each file has a unique name and avoids overwriting.
@@ -207,8 +210,7 @@ HELP_CONTENT = {
     "Main Window Overview": main_page_overview,
     "File Input Preset Editor": file_input_presets,
     "Text Input Preset Editor": text_input_presets,
-    "Troubleshooting & Tips": "Common issues include invalid format strings, missing fields, or misaligned labels...\n...",
-    "About": "CryoPop Label Studio v1.0\nCreated by Shannon Barrera\ncryopopsoftware.com",
+    "About": "CryoPop Label Studio v1.0\nCreated by Shannon Barrera",
 }
 
 

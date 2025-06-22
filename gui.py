@@ -44,7 +44,7 @@ class CryoPopLabelStudioLite:
         self.welcome_frame.pack(expand=True)
 
         tk.Label(self.welcome_frame, text="Welcome to CryoPop Label Studio", font=("Arial", 16, "bold")).pack(pady=(60, 10))
-        tk.Label(self.welcome_frame, text="Select a Preset to Begin", font=("Arial", 12)).pack(pady=5)
+        tk.Label(self.welcome_frame, text="Select or Create a Preset to Begin", font=("Arial", 12)).pack(pady=5)
 
         self.load_all_presets()
         self.widgets = {}
