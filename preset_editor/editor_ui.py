@@ -64,7 +64,7 @@ class PresetEditor(tk.Toplevel):
         if self.preset_type == "Text":
             self.geometry("500x655+70+1") 
         else:
-            self.geometry("500x820+70+1")
+            self.geometry("600x820+70+1")
 
     def _init_template_maps(self):
         self.template_display_map = {v["display_name"]: k for k, v in label_templates.items()}
@@ -94,25 +94,25 @@ class PresetEditor(tk.Toplevel):
     def _create_fields_ui(self):
         field_row = 0
         for key, label in self.fields:
-            tk.Label(self, text=label).grid(row=field_row, column=0, sticky="w", padx=10, pady=4)
+            tk.Label(self, text=label).grid(row=field_row, column=0, sticky="w", padx=10, pady=2)
 
             if key in ["partialsheet", "output_add_date", "remove_duplicates"]:
                 var = tk.BooleanVar()
                 var.set(self.preset_data.get(key, False))
                 cb = tk.Checkbutton(self, variable=var)
-                cb.grid(row=field_row, column=1, padx=10, pady=4, sticky="w")
+                cb.grid(row=field_row, column=1, padx=10, pady=2, sticky="w")
                 self.entries[key] = var
 
             elif key == "color_theme":
                 cb = ttk.Combobox(self, values=["Grey", "Pink", "Green", "Blue", "Yellow", "Purple"], state="readonly")
                 cb.set(self.preset_data.get(key, "Pink"))
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
             elif key == "text_alignment":
                 cb = ttk.Combobox(self, values=["Left", "Center", "Right"], state="readonly")
                 cb.set(self.preset_data.get(key, "Center"))
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
 
@@ -135,7 +135,7 @@ class PresetEditor(tk.Toplevel):
 
 
                 cb.set(display_label)
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
             elif key == "labeltemplate":
@@ -145,13 +145,13 @@ class PresetEditor(tk.Toplevel):
                 internal_value = self.preset_data.get(key)
                 display_name = self.template_internal_map.get(internal_value, display_names[0])
                 cb.set(display_name)
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
             elif key == "fontname":
                 cb = ttk.Combobox(self, values=["Arial", "Courier", "Helvetica", "Times", "Verdana"], state="readonly")
                 cb.set(self.preset_data.get(key, "Arial"))
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
             elif key == "fontsize":
@@ -161,26 +161,26 @@ class PresetEditor(tk.Toplevel):
                 )
                 cb.set(str(self.preset_data.get(key, "6")))
                 cb.bind("<<ComboboxSelected>>", self.update_textbox_size)
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
             elif key == "identical_or_incremental":
                 cb = ttk.Combobox(self, values=["Identical", "Incremental"], state="readonly")
                 cb.set(self.preset_data.get(key, "Identical"))
-                cb.grid(row=field_row, column=1, padx=10, pady=4)
+                cb.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = cb
 
 
             elif key == "copiesperlabel":
                 entry = tk.Entry(self, width=40)
                 entry.insert(0, str(self.preset_data.get(key, "")))
-                entry.grid(row=field_row, column=1, padx=10, pady=4)
+                entry.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = entry
 
             else:
                 entry = tk.Entry(self, width=40)
                 entry.insert(0, str(self.preset_data.get(key, "")))
-                entry.grid(row=field_row, column=1, padx=10, pady=4)
+                entry.grid(row=field_row, column=1, padx=10, pady=2)
                 self.entries[key] = entry
 
             field_row += 1
