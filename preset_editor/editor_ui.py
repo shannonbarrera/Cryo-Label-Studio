@@ -61,6 +61,7 @@ class PresetEditor(tk.Toplevel):
     def _setup_window(self):
         title = ("Text Input Preset Editor" if self.preset_type == "Text" else "File Input Preset Editor")
         self.title(title)
+        self.iconbitmap("app_icon.ico")
         if self.preset_type == "Text":
             self.geometry("500x655+70+1") 
         else:
