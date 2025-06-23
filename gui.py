@@ -23,6 +23,7 @@ class CryoPopLabelStudioLite:
         """
 
         self.root = root
+        self.root.iconbitmap("app_icon.ico")
         self.root.title("CryoPop Label Studio")
         self.root.geometry("600x650+20+20")
         self.root.resizable(False, False)  # lock resizing
@@ -588,7 +589,7 @@ class CryoPopLabelStudioLite:
         win = tk.Toplevel(self.root)
         win.title("Edit Presets")
         win.geometry("400x300")
-
+        win.iconbitmap("app_icon.ico")
         lb = tk.Listbox(win, selectmode=tk.MULTIPLE)
         lb.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         for name in self.presets:

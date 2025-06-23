@@ -220,7 +220,7 @@ def show_help_window(parent):
     help_win.title("User Guide")
     help_win.geometry("800x700")
     help_win.resizable(True, True)
-
+    help_win.iconbitmap("app_icon.ico")
     # Sidebar
     sidebar = tk.Frame(help_win, width=80, bg="#f0f0f0")
     sidebar.pack(side="left", fill="y")
