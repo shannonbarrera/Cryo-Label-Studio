@@ -6,6 +6,7 @@ import os
 import csv
 import uuid 
 import openpyxl as xlsx
+from file_io import resource_path, get_user_presets_folder
 
 
 from .file_helpers import get_csv_headers, get_xlsx_headers
@@ -35,6 +36,10 @@ DATE_FORMAT_DISPLAY_MAP = {
 class PresetEditor(tk.Toplevel):
     def __init__(self, master, preset_type="File", preset_data=None, preset_path=None, on_save=None):
         super().__init__(master)
+        self.lift()
+        self.focus_force()
+        self.grab_set()
+
         self.preset_type = self._resolve_type(preset_type, preset_data)
         self.preset_data = preset_data or {}
         self.sample_filename = self.preset_data.get("sample_filename")
@@ -61,11 +66,11 @@ class PresetEditor(tk.Toplevel):
     def _setup_window(self):
         title = ("Text Input Preset Editor" if self.preset_type == "Text" else "File Input Preset Editor")
         self.title(title)
-        self.iconbitmap("app_icon.ico")
+        self.iconbitmap(resource_path("app_icon.ico"))
         if self.preset_type == "Text":
             self.geometry("500x655+70+1") 
         else:
-            self.geometry("600x820+70+1")
+            self.geometry("500x700+70+1")
 
     def _init_template_maps(self):
         self.template_display_map = {v["display_name"]: k for k, v in label_templates.items()}
@@ -80,7 +85,6 @@ class PresetEditor(tk.Toplevel):
             ("fontsize", "Font Size"),
             ("text_alignment", "Label Text Alignment"),
             ("outputfilenameprefix", "Default Output Filename"),
-            ("output_add_date", "Add Datetime Stamp to Filename"),
             ("partialsheet", "Partial Sheet Selection"),
             ("color_theme", "Color Scheme")
         ]
@@ -97,7 +101,7 @@ class PresetEditor(tk.Toplevel):
         for key, label in self.fields:
             tk.Label(self, text=label).grid(row=field_row, column=0, sticky="w", padx=10, pady=2)
 
-            if key in ["partialsheet", "output_add_date", "remove_duplicates"]:
+            if key in ["partialsheet", "remove_duplicates"]:
                 var = tk.BooleanVar()
                 var.set(self.preset_data.get(key, False))
                 cb = tk.Checkbutton(self, variable=var)
@@ -270,123 +274,134 @@ class PresetEditor(tk.Toplevel):
         self.save_button.grid(row=self.final_field_row + 5, column=0, columnspan=2, pady=20)
 
     def save_preset(self):
-        preset = {"presettype": self.preset_type}
+        try:
+            print("DEBUG: save_preset called")
+            preset = {"presettype": self.preset_type}
 
-        # Gather widget data
-        for key, widget in self.entries.items():
-            if key == "labeltemplate":
-                display_value = widget.get()
-                internal_value = self.template_display_map.get(display_value, display_value)
-                preset[key] = internal_value
+            # Gather widget data
+            for key, widget in self.entries.items():
+                if key == "labeltemplate":
+                    display_value = widget.get()
+                    internal_value = self.template_display_map.get(display_value, display_value)
+                    preset[key] = internal_value
 
-            elif isinstance(widget, ttk.Combobox):
-                val = widget.get()
-                if key == "date_format":
-                    if val == "Leave as is":
-                        preset[key] = "Leave as is"  # ⬅️ Explicitly stores no format
-                    else:
-                        preset[key] = DATE_FORMAT_DISPLAY_MAP.get(val, "%m-%d-%Y")
-                else:
-                    preset[key] = int(val) if val.isdigit() else val
-
-
-            elif isinstance(widget, tk.BooleanVar):
-                preset[key] = widget.get()
-
-
-            elif isinstance(widget, tk.Text):
-                val = widget.get("0.0", "end-1c")  # Keep exact text, no extra strip/rstrip unless desired
-                preset[key] = val
-
-            else:
-                try:
+                elif isinstance(widget, ttk.Combobox):
                     val = widget.get()
-                    preset[key] = int(val) if val.isdigit() else val
-                except Exception:
-                    print(f"Skipping unknown widget for key: {key}")
+                    if key == "date_format":
+                        if val == "Leave as is":
+                            preset[key] = "Leave as is"  # ⬅️ Explicitly stores no format
+                        else:
+                            preset[key] = DATE_FORMAT_DISPLAY_MAP.get(val, "%m-%d-%Y")
+                    else:
+                        preset[key] = int(val) if val.isdigit() else val
 
 
-        # Save file headers if available
-        if self.preset_type == "File" and hasattr(self, "current_file_headers"):
-            preset["saved_headers"] = self.current_file_headers
-        if self.preset_type == "File" and hasattr(self, "sample_filename"):
-            preset["sample_filename"] = self.sample_filename
+                elif isinstance(widget, tk.BooleanVar):
+                    preset[key] = widget.get()
 
 
-        # Preserve or assign a unique preset_id
-        if self.preset_path and os.path.exists(self.preset_path):
-            with open(self.preset_path, "r") as f:
-                existing_data = json.load(f)
-                preset["preset_id"] = existing_data.get("preset_id", str(uuid.uuid4()))
-        else:
-            preset["preset_id"] = str(uuid.uuid4())
+                elif isinstance(widget, tk.Text):
+                    val = widget.get("0.0", "end-1c")  # Keep exact text, no extra strip/rstrip unless desired
+                    preset[key] = val
 
-        # Save UI layout (optional)
-        if self.preset_type == "Text":
-            preset["ui_layout"] = {
-                "elements": [
-                    {"type": "textbox", "id": "user_input"},
-                    {"type": "button", "id": "generate", "label": "Save Labels"},
-                ]
-            }
-        elif self.preset_type == "File":
-            preset["ui_layout"] = {
-                "elements": [
-                    {"type": "textpreview", "id": "preview_area"},
-                    {"type": "button", "id": "upload_file", "label": "Load File"},
-                    {"type": "button", "id": "generate", "label": "Save Labels"},
-                ]
-            }
+                else:
+                    try:
+                        val = widget.get()
+                        preset[key] = int(val) if val.isdigit() else val
+                    except Exception:
+                        print(f"Skipping unknown widget for key: {key}")
 
-            preset["sample_filename"] = self.sample_filename or self.preset_data.get("sample_filename", "")
+            preset["output_add_date"] = True
+
+            # Save file headers if available
+            if self.preset_type == "File" and hasattr(self, "current_file_headers"):
+                preset["saved_headers"] = self.current_file_headers
+            if self.preset_type == "File" and hasattr(self, "sample_filename"):
+                preset["sample_filename"] = self.sample_filename
 
 
-        # Generate filename if not provided
-        if not self.preset_path:
-            safe_name = "".join(
-                c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")
-            ).strip().replace(" ", "_")
+            # Preserve or assign a unique preset_id
+            if self.preset_path and os.path.exists(self.preset_path):
+                with open(self.preset_path, "r") as f:
+                    existing_data = json.load(f)
+                    preset["preset_id"] = existing_data.get("preset_id", str(uuid.uuid4()))
+            else:
+                preset["preset_id"] = str(uuid.uuid4())
 
-            counter = 1
-            filename = f"{safe_name}.json"
-            full_path = os.path.join("presets", filename)
+            # Save UI layout (optional)
+            if self.preset_type == "Text":
+                preset["ui_layout"] = {
+                    "elements": [
+                        {"type": "textbox", "id": "user_input"},
+                        {"type": "button", "id": "generate", "label": "Save Labels"},
+                    ]
+                }
+            elif self.preset_type == "File":
+                preset["ui_layout"] = {
+                    "elements": [
+                        {"type": "textpreview", "id": "preview_area"},
+                        {"type": "button", "id": "upload_file", "label": "Load File"},
+                        {"type": "button", "id": "generate", "label": "Save Labels"},
+                    ]
+                }
 
-            while os.path.exists(full_path):
-                filename = f"{safe_name}_{counter}.json"
-                full_path = os.path.join("presets", filename)
-                counter += 1
-
-            self.preset_path = full_path
-
-        # Write to file
-        if self.preset_path:
-            os.makedirs(os.path.dirname(self.preset_path), exist_ok=True)
-            with open(self.preset_path, "w") as f:
-                json.dump(preset, f, indent=4)
-
-            messagebox.showinfo("Success", "Preset saved successfully.")
-            if self.on_save:
-                self.on_save(preset)  # pass preset to the callback
-            self.destroy()
+                preset["sample_filename"] = self.sample_filename or self.preset_data.get("sample_filename", "")
 
 
-    def _get_ui_layout(self):
-        if self.preset_type == "Text":
-            return {
-                "elements": [
-                    {"type": "textbox", "id": "user_input"},
-                    {"type": "button", "id": "generate", "label": "Save Labels"},
-                ]
-            }
-        elif self.preset_type == "File":
-            return {
-                "elements": [
-                    {"type": "file_upload", "id": "upload_sample"},
-                    {"type": "textbox", "id": "textboxformatinput"},
-                    {"type": "button", "id": "generate", "label": "Save Labels"},
-                ]
-            }
-        return {}
+            # Generate filename if not provided
+            if not self.preset_path:
+                safe_name = "".join(
+                    c if c.isalnum() or c in (" ", "-", "_") else "_" for c in preset.get("name", "preset")
+                ).strip().replace(" ", "_")
+
+                counter = 1
+                user_presets_folder = get_user_presets_folder()
+
+                filename = f"{safe_name}.json"
+                full_path = os.path.join(user_presets_folder, filename)
+
+                while os.path.exists(full_path):
+                    filename = f"{safe_name}_{counter}.json"
+                    full_path = os.path.join(user_presets_folder, filename)
+                    counter += 1
+
+                self.preset_path = full_path
+
+
+            # Write to file
+            if self.preset_path:
+                os.makedirs(os.path.dirname(self.preset_path), exist_ok=True)
+                with open(self.preset_path, "w") as f:
+                    json.dump(preset, f, indent=4)
+
+                messagebox.showinfo("Success", "Preset saved successfully.")
+                if self.on_save:
+                    self.on_save(preset)  # pass preset to the callback
+                self.destroy()
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Save failed:\n{e}")        
+
+
+        def _get_ui_layout(self):
+            if self.preset_type == "Text":
+                return {
+                    "elements": [
+                        {"type": "textbox", "id": "user_input"},
+                        {"type": "button", "id": "generate", "label": "Save Labels"},
+                    ]
+                }
+            elif self.preset_type == "File":
+                return {
+                    "elements": [
+                        {"type": "file_upload", "id": "upload_sample"},
+                        {"type": "textbox", "id": "textboxformatinput"},
+                        {"type": "button", "id": "generate", "label": "Save Labels"},
+                    ]
+                }
+            return {}
 
 
     def update_textbox_size(self, event=None):
@@ -440,9 +455,6 @@ class PresetEditor(tk.Toplevel):
                 btn.grid(row=i // 4, column=i % 4, padx=5, pady=5)
 
 
-
-
-    
     def insert_field(self, column_name):
         if self.textbox_format:
             self.textbox_format.insert(tk.INSERT, f"{{{column_name}}}")
