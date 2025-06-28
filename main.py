@@ -223,7 +223,8 @@ def main(
             num_serials = (first_page_max_labels + labelcount_additional_pages) // count
             data_list = []
             label_width = template_meta["label_width"]
-            font_size = spec.fontsize
+            font_size = float(spec.fontsize)
+            
             font_name = "Arial"
             max_chars = estimate_max_chars(label_width, font_size, font_name)
             for i in range(start, start + num_serials):

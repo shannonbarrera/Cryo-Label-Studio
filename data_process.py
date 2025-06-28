@@ -1,4 +1,5 @@
 import re
+import math
 
 
 def is_valid_serial_format(text):
@@ -64,7 +65,6 @@ def estimate_max_chars(label_width_in_inches, font_size_pt, font_name="Arial"):
     # get estimated character width in points
     char_width_pt = avg_char_width_pt.get(font_name, 0.5)
     char_width_inches = char_width_pt * font_size_pt / 72.0
-
     if char_width_inches == 0:
         return 40  # fallback
 
