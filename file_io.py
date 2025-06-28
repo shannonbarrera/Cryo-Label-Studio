@@ -50,3 +50,22 @@ def save_file(filepath, content):
     content.save(filepath)
     os.startfile(filepath)
 
+def resource_path(relative_path):
+    """
+    Get absolute path to resource, works for dev and for PyInstaller.
+    """
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.abspath(relative_path)
+
+def get_user_presets_folder():
+    """
+    Returns a user-writable folder for saved presets.
+    Creates it if needed.
+    """
+    base = os.getenv('APPDATA')
+    if not base:
+        base = os.path.expanduser("~/.CryoPop")
+    folder = os.path.join(base, "CryoPop", "presets")
+    os.makedirs(folder, exist_ok=True)
+    return folder

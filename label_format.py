@@ -127,6 +127,7 @@ def paginate_labels(
             hangover = firstpage[first_page_max_labels:]
         else:
             hangover = []
+   
         firstpage = firstpage[:first_page_max_labels]
         remaining = data_list[first_page_max_data:]
         pages = []
@@ -164,7 +165,8 @@ def format_labels_page(
     first_page_first_row_col_indices,
     first_page_last_row_col_indices,
     spec,
-    is_last_page=False  # NEW FLAG: control break on last page
+    needs_page_break,
+    is_last_page=False
 ):
     labelsheet = Document(templatepath)
     table = labelsheet.tables[0]
@@ -234,12 +236,11 @@ def format_labels_page(
                 spec.identical_or_incremental,
             )
             labelcount += 1
-    '''
-    # Add a blank paragraph + page break if NOT the last page
-    if not is_last_page:
-        labelsheet.add_page_break()
-        print("break")
-    '''
+
+    if needs_page_break:
+        if not is_last_page:
+            labelsheet.add_page_break()
+
     return labelsheet
 
 

@@ -16,7 +16,7 @@ import sys
 import re
 from label_templates import label_templates
 from data_extract import get_data_list_csv, get_data_list_xlsx, remove_duplicate_labels
-from file_io import get_file_path, save_file, get_template
+from file_io import get_file_path, save_file, get_template, resource_path
 from label_format import (
     get_row_and_column_indices,
     get_first_page_row_indices,
@@ -31,8 +31,6 @@ from label_format import (
 from label_spec import LabelSpec
 from docx import Document
 from data_process import estimate_max_chars
-
-
 
 def main(
     spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None
@@ -59,7 +57,8 @@ def main(
     """
 
     template_meta = label_templates[spec.labeltemplate]
-    templatepath = template_meta["template_path"]
+    templatepath = resource_path(template_meta["template_path"])
+    needs_page_break = template_meta["needs_page_break"]
     labeltemplateexample = Document(templatepath)
     table_format = template_meta["table_format"]
     start_row = getattr(spec, "row_start", 1)
@@ -130,7 +129,8 @@ def main(
                 first_page_first_row_col_indices if i == 0 else column_indices,
                 first_page_last_row_col_indices if i == 0 else column_indices,
                 spec,
-                is_last_page=is_last  # pass this flag!
+                needs_page_break,
+                is_last_page=is_last
             )
 
             if final_doc is None:
@@ -160,7 +160,7 @@ def main(
 
 
             data_list = [labeltext] * count
-
+  
             first_page_max_labels = get_max_labels_first_page(
                 first_page_row_indices,
                 column_indices,
@@ -169,32 +169,30 @@ def main(
             )
             max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
             
-            pages = [*paginate_labels(first_page_max_labels, max_labels_per_page, data_list, 1)]
+            firstpage, otherpages = [*paginate_labels(first_page_max_labels, max_labels_per_page, data_list, 1)]
+            
+            pages = [firstpage]
 
-            final_doc = format_labels_page(
-                pages[0],
-                templatepath,
-                first_page_row_indices,
-                column_indices,
-                first_page_first_row_col_indices,
-                first_page_last_row_col_indices,
-                spec,
-            )
+            pages = pages + otherpages
 
-            for page in pages[1:]:
-                if len(page) > 0:
-                    next_doc = format_labels_page(
-                        page,
-                        templatepath,
-                        row_indices,
-                        column_indices,
-                        column_indices,
-                        column_indices,
-                        spec,
-                    )
-                    final_doc = combine_docs(final_doc, next_doc)
-
-
+            for i, page in enumerate(pages):
+                is_last = (i == len(pages) - 1)
+                formatted_page = format_labels_page(
+                    page,
+                    templatepath,
+                    first_page_row_indices if i == 0 else row_indices,
+                    column_indices,
+                    first_page_first_row_col_indices if i == 0 else column_indices,
+                    first_page_last_row_col_indices if i == 0 else column_indices,
+                    spec,
+                    needs_page_break,
+                    is_last_page=is_last
+                )
+                if final_doc is None:
+                    final_doc = formatted_page
+                else:
+                    final_doc = combine_docs(final_doc, formatted_page)
+            
         elif logic == "Incremental":
             num_pages = spec.pages_of_labels
             match = re.match(r"([A-Za-z0-9\-_]*?)(\d+)$", text_box_input)
@@ -253,7 +251,8 @@ def main(
                     first_page_first_row_col_indices if i == 0 else column_indices,
                     first_page_last_row_col_indices if i == 0 else column_indices,
                     spec,
-                    is_last_page=is_last  # pass this flag!
+                    needs_page_break,
+                    is_last_page=is_last
                 )
 
                 if final_doc is None:

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, Canvas, Scrollbar
 from tkhtmlview import HTMLLabel
 import markdown
+from file_io import resource_path
 
 main_page_overview = """**Main Window Overview**
 
@@ -90,12 +91,10 @@ Choose the font size for your labels.
 Choose **Left**, **Center**, or **Right** alignment for your label text.
 
 **Default Output Filename**  
-Enter a default filename to be suggested when saving your labels.  
+Enter a default filename to be used when saving your labels.  
+The date and time will be automatically added to the filename you enter here, creating a unique filename for each label file.  
 This helps save time and keep files organized.
 
-**Add Datetime Stamp to Filename**  
-Enable this to automatically append the current date and time to the suggested filename when saving.  
-This ensures each file has a unique name and avoids overwriting.
 
 **Partial Sheet Selection**  
 Check this box to allow the user to select a starting and ending position on a label sheet — useful for using partial sheets.
@@ -170,14 +169,11 @@ Choose **Left**, **Center**, or **Right** alignment for your label text.
 
 **Default Output Filename**  
 Enter a default filename to be suggested when saving your labels.  
+The date and time will be automatically added to the filename you enter here, creating a unique filename for each label file.  
 This helps save time and keeps files organized.
 
 **Remove Duplicate Labels**
 Check this box to make sure that if there are multiple lines in your spreadsheet that result in identical labels, only one set of each label will be generated.
-
-**Add Datetime Stamp to Filename**  
-Enable this to automatically append the current date and time to the suggested filename when saving.  
-This ensures each file has a unique name and avoids overwriting.
 
 **Partial Sheet Selection**  
 Check this box to allow the user to select a starting and ending position on a label sheet.  
@@ -220,7 +216,7 @@ def show_help_window(parent):
     help_win.title("User Guide")
     help_win.geometry("800x700")
     help_win.resizable(True, True)
-    help_win.iconbitmap("app_icon.ico")
+    help_win.iconbitmap(resource_path("app_icon.ico"))
     # Sidebar
     sidebar = tk.Frame(help_win, width=80, bg="#f0f0f0")
     sidebar.pack(side="left", fill="y")

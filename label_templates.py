@@ -9,7 +9,7 @@ label_templates = {
         "lines_per_label": 8,
         "default_font_size": 6,
         "table_format": "checkerboard",
-
+        "needs_page_break": False,
     },
     "LCRY-1200": {
         "display_name": "Cryo-Tags 1.50 x 0.75",
@@ -21,6 +21,7 @@ label_templates = {
         "lines_per_label": 8,
         "default_font_size": 6,
         "table_format": "checkerboard",
+        "needs_page_break": False,
     },
     "LCRY-2380": {
         "display_name": "Cryo-Babies 0.94 x 0.50",
@@ -32,6 +33,7 @@ label_templates = {
         "lines_per_label": 8,
         "default_font_size": 6,
         "table_format": "checkerboard",
+        "needs_page_break": False,
     },
     "LCRY-1100": {
         "display_name": "Cryo-Tags 1.69 x 0.75",
@@ -43,6 +45,7 @@ label_templates = {
         "lines_per_label": 8,
         "default_font_size": 6,
         "table_format": "LSL stripes",
+        "needs_page_break": False,
     },
     "LCRY-1258": {
         "display_name": "Cryo-Tags 2.625 x 1.0",
@@ -54,7 +57,7 @@ label_templates = {
         "lines_per_label": 8,
         "default_font_size": 10,
         "table_format": "LSL stripes",
-
+        "needs_page_break": False,
     },
     "SIDE-1000": {
         "display_name": "Sidewall Cryo-Tags 1.50 x 0.25",
@@ -66,6 +69,7 @@ label_templates = {
         "lines_per_label": 2,
         "default_font_size": 7,
         "table_format": "LSL stripes",
+        "needs_page_break": True,
     },
     "SPOT-1000": {
         "display_name": "Tough-Spots 3/8 in",
@@ -77,6 +81,7 @@ label_templates = {
         "lines_per_label": 5,
         "default_font_size": 7,
         "table_format": "checkerboard",
+        "needs_page_break": True,
     },
     "SPOT-2000": {
         "display_name": "Tough-Spots 1/2 in",
@@ -88,6 +93,7 @@ label_templates = {
         "lines_per_label": 5,
         "default_font_size": 7,
         "table_format": "checkerboard",
+        "needs_page_break": True,
     },
     "SPOT-3000": {
         "display_name": "Tough-Spots 3/4 in",
@@ -99,6 +105,8 @@ label_templates = {
         "lines_per_label": 5,
         "default_font_size": 11,
         "table_format": "checkerboard",
+        "needs_page_break": False,
+        
     },
     "SPOT-4000": {
         "display_name": "Tough-Spots 1.00 in",
@@ -110,6 +118,7 @@ label_templates = {
         "lines_per_label": 5,
         "default_font_size": 12,
         "table_format": "checkerboard",
+        "needs_page_break": False,
     },
     "SPOT-5000": {
         "display_name": "Tough-Spots 7/16 in",
@@ -121,5 +130,6 @@ label_templates = {
         "lines_per_label": 5,
         "default_font_size": 6,
         "table_format": "checkerboard",
+        "needs_page_break": False,
     },
 }

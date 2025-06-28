@@ -3,15 +3,19 @@ from tkinter import filedialog, messagebox, ttk
 from label_spec import LabelSpec
 from main import main
 import json
+import shutil
 import os
+import sys
 from datetime import datetime
 from label_templates import label_templates
 from userguide import show_help_window
-from preset_editor import PresetEditor
+from preset_editor.editor_ui import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
 from data_process import is_valid_serial_format, parse_copiesperlabel_input
 from preset_editor.file_helpers import get_csv_headers, get_xlsx_headers
+from file_io import resource_path, get_user_presets_folder
+
 
 class CryoPopLabelStudioLite:
     def __init__(self, root):
@@ -22,8 +26,20 @@ class CryoPopLabelStudioLite:
             root (tk.Tk): The root Tkinter window object.
         """
 
+        # Copy built-in presets to user folder if not already copied
+        built_in_presets_dir = resource_path("presets")
+        user_presets_dir = get_user_presets_folder()
+
+        for filename in os.listdir(built_in_presets_dir):
+            if filename.endswith(".json"):
+                src = os.path.join(built_in_presets_dir, filename)
+                dest = os.path.join(user_presets_dir, filename)
+                if not os.path.exists(dest):
+                    shutil.copyfile(src, dest)
+
         self.root = root
-        self.root.iconbitmap("app_icon.ico")
+        self.root.iconbitmap(resource_path("app_icon.ico"))
+
         self.root.title("CryoPop Label Studio")
         self.root.geometry("600x650+20+20")
         self.root.resizable(False, False)  # lock resizing
@@ -36,7 +52,8 @@ class CryoPopLabelStudioLite:
 
 
         self.current_spec = None
-        self.presets_dir = "presets"
+        self.presets_dir = get_user_presets_folder()
+
         os.makedirs(self.presets_dir, exist_ok=True)
 
         self.setup_menu()
@@ -220,18 +237,23 @@ class CryoPopLabelStudioLite:
 
     def load_all_presets(self):
         """
-        Load all saved presets from disk into the preset dropdown.
+        Load all built-in and user presets into the preset dropdown.
         """
         self.presets = {}
-        if os.path.exists(self.presets_dir):
-            for file in os.listdir(self.presets_dir):
+
+        # Load user presets
+        user_dir = get_user_presets_folder()
+        if os.path.exists(user_dir):
+            for file in os.listdir(user_dir):
                 if file.endswith(".json"):
-                    path = os.path.join(self.presets_dir, file)
+                    path = os.path.join(user_dir, file)
                     with open(path, "r") as f:
                         data = json.load(f)
                         name = data.get("name", file)
+                        # Allow user presets to overwrite built-in names
                         self.presets[name] = (path, data)
         self.preset_dropdown['values'] = list(self.presets.keys())
+
 
     def load_selected_preset(self, event=None, preset_name=None):
         """
@@ -589,7 +611,7 @@ class CryoPopLabelStudioLite:
         win = tk.Toplevel(self.root)
         win.title("Edit Presets")
         win.geometry("400x300")
-        win.iconbitmap("app_icon.ico")
+        win.iconbitmap(resource_path("app_icon.ico"))
         lb = tk.Listbox(win, selectmode=tk.MULTIPLE)
         lb.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         for name in self.presets:
