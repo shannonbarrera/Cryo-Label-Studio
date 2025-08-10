@@ -1,0 +1,29 @@
+{
+    "presettype": "Text",
+    "name": "Label Series Example",
+    "labeltemplate": "SPOT-2000",
+    "identical_or_incremental": "Incremental",
+    "copiesperlabel": 1,
+    "fontname": "Arial",
+    "fontsize": 6,
+    "text_alignment": "Center",
+    "outputfilenameprefix": "series38in",
+    "partialsheet": true,
+    "color_theme": "Green",
+    "textboxformatinput": "\n{LABEL_TEXT}",
+    "output_add_date": true,
+    "preset_id": "efa78d34-d108-4ba3-95d2-02d077e8e40d",
+    "ui_layout": {
+        "elements": [
+            {
+                "type": "textbox",
+                "id": "user_input"
+            },
+            {
+                "type": "button",
+                "id": "generate",
+                "label": "Save Labels"
+            }
+        ]
+    }
+}
