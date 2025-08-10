@@ -1,5 +1,5 @@
 """
-Main module for label generation using CryoPop Label Studio presets.
+Main module for label generation using Cryo Label Studio presets.
 
 This script processes label specifications (via LabelSpec) and generates formatted Word documents
 based on either text-based or file-based input. It handles template selection, layout calculation,

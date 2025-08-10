@@ -17,10 +17,10 @@ from preset_editor.file_helpers import get_csv_headers, get_xlsx_headers
 from file_io import resource_path, get_user_presets_folder
 
 
-class CryoPopLabelStudioLite:
+class CryoLabelStudioLite:
     def __init__(self, root):
         """
-        Initialize the CryoPop Label Studio main application window.
+        Initialize the Cryo Label Studio main application window.
 
         Args:
             root (tk.Tk): The root Tkinter window object.
@@ -40,7 +40,7 @@ class CryoPopLabelStudioLite:
         self.root = root
         self.root.iconbitmap(resource_path("app_icon.ico"))
 
-        self.root.title("CryoPop Label Studio")
+        self.root.title("Cryo Label Studio")
         self.root.geometry("600x650+20+20")
         self.root.resizable(False, False)  # lock resizing
 
@@ -61,7 +61,7 @@ class CryoPopLabelStudioLite:
         self.welcome_frame = tk.Frame(self.top_frame)
         self.welcome_frame.pack(expand=True)
 
-        tk.Label(self.welcome_frame, text="Welcome to CryoPop Label Studio", font=("Arial", 16, "bold")).pack(pady=(60, 10))
+        tk.Label(self.welcome_frame, text="Welcome to Cryo Label Studio", font=("Arial", 16, "bold")).pack(pady=(60, 10))
         tk.Label(self.welcome_frame, text="Select or Create a Preset to Begin", font=("Arial", 12)).pack(pady=5)
 
         self.load_all_presets()
@@ -724,5 +724,5 @@ class CryoPopLabelStudioLite:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = CryoPopLabelStudioLite(root)
+    app = CryoLabelStudioLite(root)
     root.mainloop()

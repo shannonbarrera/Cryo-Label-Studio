@@ -65,7 +65,7 @@ def get_user_presets_folder():
     """
     base = os.getenv('APPDATA')
     if not base:
-        base = os.path.expanduser("~/.CryoPop")
-    folder = os.path.join(base, "CryoPop", "presets")
+        base = os.path.expanduser("~/.CryoLabelStudio")
+    folder = os.path.join(base, "CryoLabelStudio", "presets")
     os.makedirs(folder, exist_ok=True)
     return folder

@@ -206,7 +206,7 @@ HELP_CONTENT = {
     "Main Window Overview": main_page_overview,
     "File Input Preset Editor": file_input_presets,
     "Text Input Preset Editor": text_input_presets,
-    "About": "CryoPop Label Studio v1.0\nCreated by Shannon Barrera",
+    "About": "Cryo Label Studio v1.0\nCreated by Shannon Barrera",
 }
 
 
