@@ -10,9 +10,8 @@ You can pull label data directly from CSV or Excel files, create a series of inc
 - **Preset-based workflow** – Save and load label format settings instantly.
 - **Supports CSV, Excel, or direct text input**.
 - **Serial or identical labels** – Generate numbered sets or repeat the same label.
-- **Multiple label templates** – Includes Cryo Babies, Tough Spots, and more.
+- **Multiple label templates** – Includes Cryo Babies, Cryo Tags, and Tough Spots.  Developers can customize to add additional templates.
 - **Partial sheet printing** – Start anywhere on a sheet to avoid waste.
-- **Custom fonts and sizes** – Make text clear and readable.
 - **Export to DOCX** – Print from any standard printer. Works best with Microsoft Word.
 - **User-friendly UI** – Minimal clutter, quick to learn.
 ---
@@ -80,13 +79,30 @@ You can add your own templates to use with other label types.
      ```
    - If creating a standalone EXE: rebuild with PyInstaller:
      ```
-     pyinstaller --clean --noconfirm --onefile ^
-       --add-data "presets/*.json;presets" ^
-       --add-data "templates/*.docx;templates" ^
-       gui.py
+     pyinstaller --clean --noconfirm gui.spec
+
      ```
 
 Once rebuilt, your new template will appear in the template dropdown inside the app.
+
+---
+
+## 🛠 Development
+
+This app is built with:
+
+- **Python** (3.12+ recommended)
+- **Tkinter** (GUI)
+- **python-docx** and **openpyxl**
+- **PyInstaller** (packaging)
+
+### Running from source
+```bash
+pip install -r requirements.txt
+python gui.py```
+
+
+
 
 
 
