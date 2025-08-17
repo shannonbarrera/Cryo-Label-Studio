@@ -106,7 +106,7 @@ python gui.py
 
 Only Cryo Babies and Tough Spots templates are included for now.
 
-Installer isn’t signed → expect a SmartScreen warning until I add a certificate.
+Installer isn’t signed → expect a SmartScreen warning.
 
 ### 🤝 Contributing
 
@@ -117,4 +117,5 @@ Pull requests welcome if you want to extend functionality.
 ### 📝 License
 
 Released as free software under the MIT License.
-Donations/support welcome at [Ko-Fi](https://ko-fi.com/shannonbarrera)
+
+Donations/support welcome at [my ko-fi](https://ko-fi.com/shannonbarrera).
