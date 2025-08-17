@@ -99,10 +99,5 @@ This app is built with:
 ### Running from source
 ```bash
 pip install -r requirements.txt
-python gui.py```
-
-
-
-
-
-
+python gui.py
+```
