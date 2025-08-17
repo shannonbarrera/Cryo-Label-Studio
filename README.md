@@ -116,6 +116,6 @@ Pull requests welcome if you want to extend functionality.
 
 ### 📝 License
 
-Released as free software under the MIT License.
+This project is licensed under the **GNU GPL v3.0** — see the [LICENSE](./LICENSE) file for details.
 
 Donations/support welcome at [my ko-fi](https://ko-fi.com/shannonbarrera).
