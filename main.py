@@ -72,11 +72,15 @@ def main(
         first_page_row_indices = get_first_page_row_indices(
             start_row, end_row, row_indices
         )
+        print(start_row)
+        print(end_row)
+        print(row_indices)
         first_page_first_row_col_indices, first_page_last_row_col_indices = (
             get_first_page_col_indices(
                 start_col, end_col, start_row, end_row, column_indices
             )
         )
+        print(first_page_first_row_col_indices, first_page_last_row_col_indices)
     else:
         first_page_row_indices = row_indices
         first_page_first_row_col_indices = column_indices

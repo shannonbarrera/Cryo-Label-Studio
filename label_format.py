@@ -89,7 +89,12 @@ def get_max_labels_first_page(
     labels_first_page_first_last_row = len(first_page_first_row_col_indices) + len(
         first_page_last_row_col_indices
     )
-    labels_first_page_middle_rows = (len(first_page_row_indices) - len(first_page_row_indices)) * len(
+    rows_first_last = 0
+    for item in first_page_first_row_col_indices, first_page_last_row_col_indices:
+        if len(item) > 0:
+            rows_first_last += 1
+
+    labels_first_page_middle_rows = (len(first_page_row_indices) - rows_first_last) * len(
         column_indices
     )
     total_cells = labels_first_page_first_last_row + labels_first_page_middle_rows
