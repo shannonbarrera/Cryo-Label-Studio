@@ -101,3 +101,20 @@ This app is built with:
 pip install -r requirements.txt
 python gui.py
 ```
+
+### 🚧 Known Limitations
+
+Only Cryo Babies and Tough Spots templates are included for now.
+
+Installer isn’t signed → expect a SmartScreen warning until I add a certificate.
+
+### 🤝 Contributing
+
+Bug reports and feature requests welcome under Issues.
+
+Pull requests welcome if you want to extend functionality.
+
+### 📝 License
+
+Released as free software under the MIT License.
+Donations/support welcome at [Ko-Fi](https://ko-fi.com/shannonbarrera)
