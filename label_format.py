@@ -89,7 +89,7 @@ def get_max_labels_first_page(
     labels_first_page_first_last_row = len(first_page_first_row_col_indices) + len(
         first_page_last_row_col_indices
     )
-    labels_first_page_middle_rows = (len(first_page_row_indices) - 2) * len(
+    labels_first_page_middle_rows = (len(first_page_row_indices) - len(first_page_row_indices)) * len(
         column_indices
     )
     total_cells = labels_first_page_first_last_row + labels_first_page_middle_rows
@@ -100,7 +100,6 @@ def paginate_labels(
     first_page_max_labels, max_labels_per_page, data_list, copiesperlabel
 ):
     total_labels = len(data_list) * copiesperlabel
-
     if first_page_max_labels > total_labels:
         num_pages = 1
         firstpage = []

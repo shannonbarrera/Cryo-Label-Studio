@@ -72,13 +72,11 @@ def main(
         first_page_row_indices = get_first_page_row_indices(
             start_row, end_row, row_indices
         )
-
         first_page_first_row_col_indices, first_page_last_row_col_indices = (
             get_first_page_col_indices(
                 start_col, end_col, start_row, end_row, column_indices
             )
         )
-
     else:
         first_page_row_indices = row_indices
         first_page_first_row_col_indices = column_indices
@@ -110,13 +108,12 @@ def main(
             first_page_row_indices,
             column_indices,
             first_page_first_row_col_indices,
-            first_page_last_row_col_indices,
+            first_page_last_row_col_indices
         )
         first_page, otherpages = paginate_labels(
             first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel
         )
         pages = [first_page]
-
         pages = pages + otherpages
 
         for i, page in enumerate(pages):
