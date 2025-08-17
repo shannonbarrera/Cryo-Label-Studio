@@ -2,7 +2,7 @@
 #define MyAppName "Cryo Label Studio"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Shannon Barrera"
-#define MyAppExeName "Cryo Label Studio Lite.exe"
+#define MyAppExeName "Cryo Label Studio.exe"
 
 [Setup]
 AppId={{60a83225-065a-4dfa-adbd-f141e4f537a7}}
@@ -14,7 +14,7 @@ DefaultGroupName={#MyAppName}
 DisableDirPage=no
 DisableProgramGroupPage=yes
 OutputDir=dist\installer
-OutputBaseFilename=CryoPopLabelStudioLite-Setup
+OutputBaseFilename=CryoLabelStudio-Setup
 Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
