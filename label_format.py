@@ -56,24 +56,6 @@ def get_first_page_col_indices(start_col, end_col, start_row, end_row, col_indic
     return first_page_first_row_col_indices, first_page_last_row_col_indices
 
 
-def get_max_labels_per_page(spec, templatepath, table_format):
-    """
-    Calculates how many label entries can fit per page.
-
-    Args:
-        labeltemplate (str): Path to label template file.
-        labelsheetlayouttype (str): Layout type of the label sheet.
-        copiesperlabel (int): Number of repeated labels per entry.
-
-    Returns:
-        int: Maximum number of unique label entries per page.
-    """
-
-    row_indices, column_indices = get_row_and_column_indices(templatepath, table_format)
-    total_cells = len(row_indices) * len(column_indices)
-    return total_cells
-
-
 def get_max_labels_first_page(
     first_page_row_indices,
     column_indices,
