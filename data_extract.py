@@ -3,6 +3,32 @@ import re
 from datetime import datetime, date
 import openpyxl as xlsx
 
+
+def _clean_cell_value(value, date_format):
+    """
+    Normalizes a raw cell value: blank strings become None, string dates are
+    parsed (unless date_format is "Leave as is"), and datetime/date values are
+    passed through as-is unless date_format is "Leave as is" (then stringified).
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        value = value.strip()
+        if value == "":
+            return None
+        if date_format == "Leave as is":
+            return value
+        return try_parse_date(value)
+
+    if isinstance(value, (datetime, date)):
+        if date_format == "Leave as is":
+            return str(value)
+        return value
+
+    return value
+
+
 def get_data_list_csv(input_file_path, textboxformatinput, date_format=None):
     """
     Extracts label data from a CSV file using defined format string and header names.
@@ -24,21 +50,10 @@ def get_data_list_csv(input_file_path, textboxformatinput, date_format=None):
         indices_for_labeldata = [columns_in_csv.index(col) for col in label_data_list_format if col in columns_in_csv]
 
         for row in csv_reader[1:]:
-            data = []
-            for index in indices_for_labeldata:
-                if index < len(row):
-                    val = row[index]
-                    if isinstance(val, str):
-                        val = val.strip()
-                        if val == "":
-                            data.append(None)
-                        elif date_format != "Leave as is":
-                            data.append(try_parse_date(val))
-                        else:
-                            data.append(val)
-
-                else:
-                    data.append(None)
+            data = [
+                _clean_cell_value(row[index], date_format) if index < len(row) else None
+                for index in indices_for_labeldata
+            ]
 
             if not all(val is None for val in data):
                 batchdata.append(data)
@@ -64,27 +79,7 @@ def get_data_list_xlsx(input_file_path, textboxformatinput, date_format=None):
 
     cleaned_info = []
     for row in raw_info[1:]:  # skip header
-        cleaned_row = []
-        for cell in row:
-            if cell is None:
-                cleaned_row.append(None)
-            elif isinstance(cell, str):
-                stripped = cell.strip()
-                if stripped == "":
-                    cleaned_row.append(None)
-                elif date_format != "Leave as is":
-                    cleaned_row.append(try_parse_date(stripped))
-                else:
-                    cleaned_row.append(str(cell)) 
-            elif isinstance(cell, (datetime, date)):
-                if date_format == "Leave as is":
-                    cleaned_row.append(str(cell))  
-                else:
-                    cleaned_row.append(cell)  
-            else:
-                cleaned_row.append(cell)
-  
-
+        cleaned_row = [_clean_cell_value(cell, date_format) for cell in row]
 
         if any(cell is not None for cell in cleaned_row):
             cleaned_info.append(cleaned_row)
