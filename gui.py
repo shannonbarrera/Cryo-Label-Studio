@@ -2,10 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from label_spec import LabelSpec
 from main import main
-import json
-import shutil
 import os
-import sys
 from datetime import datetime
 from label_templates import label_templates
 from userguide import show_help_window
@@ -13,8 +10,10 @@ from preset_editor.editor_ui import PresetEditor
 from data_extract import get_data_list_csv, get_data_list_xlsx
 from label_format import apply_format_to_row
 from data_process import is_valid_serial_format, parse_copiesperlabel_input
-from preset_editor.file_helpers import get_csv_headers, get_xlsx_headers
 from file_io import resource_path, get_user_presets_folder
+from ui_helpers import resolve_theme_color, build_footer_text, replace_copies_in_footer
+from preset_store import ensure_builtin_presets_copied, load_presets_from_folder
+from preset_manager_window import PresetManagerWindow
 
 
 class CryoLabelStudioLite:
@@ -29,13 +28,7 @@ class CryoLabelStudioLite:
         # Copy built-in presets to user folder if not already copied
         built_in_presets_dir = resource_path("presets")
         user_presets_dir = get_user_presets_folder()
-
-        for filename in os.listdir(built_in_presets_dir):
-            if filename.endswith(".json"):
-                src = os.path.join(built_in_presets_dir, filename)
-                dest = os.path.join(user_presets_dir, filename)
-                if not os.path.exists(dest):
-                    shutil.copyfile(src, dest)
+        ensure_builtin_presets_copied(built_in_presets_dir, user_presets_dir)
 
         self.root = root
         self.root.iconbitmap(resource_path("app_icon.ico"))
@@ -88,47 +81,14 @@ class CryoLabelStudioLite:
             sample_file (str, optional): Name of the sample file for File Input presets.
             copies (str or int, optional): Number of label copies to display.
         """
-        footer_parts = []
-        if copies is not None:
-            strcopies = str(copies)
-            if "," in strcopies or "-" in strcopies:
-                footer_copies = None
-            else:
-                if copies == "":
-                    footer_copies = "Fill Sheet"
-                else:
-                    footer_copies = copies
-        else:
-            footer_copies = None
-
-        if input_type == "Text":
-            if logic_type:
-                footer_parts.append(f"Logic: {logic_type}")
-            if footer_copies is not None:
-                footer_parts.append(f"Copies: {footer_copies}")
-            
-        elif input_type == "File":
-            footer_parts.append(f"Sample File: {sample_file or '(none)'}")
-            if footer_copies is not None:
-                footer_parts.append(f"Copies: {footer_copies}")
-            
-        else:
-            footer_parts.append("Please Select a Preset")
-
-
-        self.status_var.set("  •  ".join(footer_parts))
+        self.status_var.set(build_footer_text(input_type, logic_type, sample_file, copies))
 
     def update_footer_copies_only(self):
         """
         Refresh only the "Copies" part of the footer based on the selected radio button.
         """
         current = self.selected_label_count.get()
-        existing_text = self.status_var.get()
-        parts = existing_text.split("  •  ")
-        # Remove any old Copies entry
-        parts = [p for p in parts if not p.strip().startswith("Copies:")]
-        parts.append(f"Copies: {current}")
-        self.status_var.set("  •  ".join(parts))
+        self.status_var.set(replace_copies_in_footer(self.status_var.get(), current))
 
     def setup_menu(self):
         """
@@ -174,15 +134,7 @@ class CryoLabelStudioLite:
             theme_name (str): Name of the color theme to apply (e.g., "Pink", "Grey").
         """
 
-        themes = {
-            "Pink": "#FBDAE9",
-            "Green": "#D3F8E2",
-            "Blue": "#C6E9FB",
-            "Yellow": "#F4F0CD",
-            "Purple": "#EFDAFB",
-            "Grey": "#F0F0F0"
-        }
-        bg = themes.get(theme_name, "Grey")
+        bg = resolve_theme_color(theme_name)
 
         # Setup custom styles for ttk widgets
         style = ttk.Style()
@@ -239,19 +191,7 @@ class CryoLabelStudioLite:
         """
         Load all built-in and user presets into the preset dropdown.
         """
-        self.presets = {}
-
-        # Load user presets
-        user_dir = get_user_presets_folder()
-        if os.path.exists(user_dir):
-            for file in os.listdir(user_dir):
-                if file.endswith(".json"):
-                    path = os.path.join(user_dir, file)
-                    with open(path, "r") as f:
-                        data = json.load(f)
-                        name = data.get("name", file)
-                        # Allow user presets to overwrite built-in names
-                        self.presets[name] = (path, data)
+        self.presets = load_presets_from_folder(get_user_presets_folder())
         self.preset_dropdown['values'] = list(self.presets.keys())
 
 
@@ -608,71 +548,19 @@ class CryoLabelStudioLite:
         """
         Open a window to manage existing presets, allowing users to edit or delete them.
         """
-        win = tk.Toplevel(self.root)
-        win.title("Edit Presets")
-        win.geometry("400x300")
-        win.iconbitmap(resource_path("app_icon.ico"))
-        lb = tk.Listbox(win, selectmode=tk.MULTIPLE)
-        lb.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        for name in self.presets:
-            lb.insert(tk.END, name)
+        def handle_edit(name, path, data):
+            PresetEditor(self.root, preset_data=data, preset_path=path, on_save=self.on_preset_saved)
 
-        status_label = tk.Label(win, text="", fg="green")
-        status_label.pack(pady=5)
-
-        def edit_selected():
-            selected = lb.curselection()
-            if not selected:
-                return
-            name = lb.get(selected[0])
-            path, data = self.presets[name]
-
-            # Call PresetEditor to open the edit window
-            editor = PresetEditor(self.root, preset_data=data, preset_path=path, on_save=self.on_preset_saved)
-
-            # NEW: If it's a File preset and has an input file path, refresh the buttons
-            if data.get("presettype") == "File" and data.get("input_file_path"):
-                self.refresh_column_buttons_from_file(
-                    data["input_file_path"],
-                    data.get("textboxformatinput", "")
-                )
-
-            win.destroy()
-
-
-        def delete_selected():
-            selected = lb.curselection()
-            if not selected:
-                return
-            
-            if len(selected) >= 1:
-                confirm = messagebox.askyesno("Confirm Delete", f"Delete {len(selected)} presets?")
-                if not confirm:
-                    return
-
-            deleted_names = []
-            for i in selected:
-                name = lb.get(i)
-                path, _ = self.presets[name]
-                os.remove(path)
-                deleted_names.append(name)
-
-            # Refresh listbox without closing the window
+        def handle_presets_changed():
             self.load_all_presets()
-            lb.delete(0, tk.END)
-            for name in self.presets:
-                lb.insert(tk.END, name)
+            return self.presets
 
-            status_label.config(text=f"Deleted: {', '.join(deleted_names)}")
-
-            win.lift()
-            win.focus_force()
-
-
-        btn_frame = tk.Frame(win)
-        btn_frame.pack(pady=5)
-        tk.Button(btn_frame, text="Edit", command=edit_selected).pack(side=tk.LEFT, padx=10)
-        tk.Button(btn_frame, text="Delete", command=delete_selected).pack(side=tk.LEFT, padx=10)
+        PresetManagerWindow(
+            self.root,
+            self.presets,
+            on_edit=handle_edit,
+            on_presets_changed=handle_presets_changed,
+        )
 
     def on_preset_saved(self, saved_preset):
         """
@@ -692,35 +580,6 @@ class CryoLabelStudioLite:
                 self.current_spec = LabelSpec(**data)
                 self.load_selected_preset(preset_name=name)
                 break
-
-    def refresh_column_buttons_from_file(self, file_path, format_string):
-        """
-        Update column selection buttons in the Preset Editor UI based on the uploaded file.
-
-        Args:
-            file_path (str): Path to the sample CSV or XLSX file.
-            format_string (str): Formatting string used for preview generation.
-        """
-
-        if file_path.endswith(".csv"):
-            headers = get_csv_headers(file_path)
-        else:
-            headers = get_xlsx_headers(file_path)
-
-        # Clear previous buttons
-        for widget in self.header_buttons_frame.winfo_children():
-            widget.destroy()
-
-        # Build new buttons
-        for i, header in enumerate(headers):
-            btn = tk.Button(
-                self.header_buttons_frame,
-                text=header,
-                command=lambda h=header: self.insert_field_into_format(h)
-            )
-            btn.grid(row=i // 3, column=i % 3, padx=5, pady=5)
-
-
 
 if __name__ == "__main__":
     root = tk.Tk()
