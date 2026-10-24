@@ -207,8 +207,8 @@ class CryoLabelStudioLite:
                     widget.configure(bg='white')
                 else:
                     widget.configure(bg=bg)
-            except:
-                pass
+            except tk.TclError:
+                pass  # Widget doesn't support the bg option (e.g. some ttk widgets)
 
             # ttk widgets (skip Combobox!)
             if isinstance(widget, ttk.Button) or widget_class == 'TButton':

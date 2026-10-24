@@ -16,7 +16,7 @@ import sys
 import re
 from label_templates import label_templates
 from data_extract import get_data_list_csv, get_data_list_xlsx, remove_duplicate_labels
-from file_io import get_file_path, save_file, get_template, resource_path
+from file_io import save_file, resource_path
 from label_format import (
     get_row_and_column_indices,
     get_first_page_row_indices,
@@ -31,6 +31,53 @@ from label_format import (
 from label_spec import LabelSpec
 from docx import Document
 from data_process import estimate_max_chars
+
+
+def _build_document(
+    data_list,
+    copiesperlabel,
+    first_page_max_labels,
+    max_labels_per_page,
+    templatepath,
+    first_page_row_indices,
+    row_indices,
+    column_indices,
+    first_page_first_row_col_indices,
+    first_page_last_row_col_indices,
+    spec,
+    needs_page_break,
+):
+    """
+    Paginates data_list into pages of labels, formats each page from the template,
+    and combines them into a single Document.
+    """
+    first_page, other_pages = paginate_labels(
+        first_page_max_labels, max_labels_per_page, data_list, copiesperlabel
+    )
+    pages = [first_page] + other_pages
+
+    final_doc = None
+    for i, page in enumerate(pages):
+        is_last = i == len(pages) - 1
+        formatted_page = format_labels_page(
+            page,
+            templatepath,
+            first_page_row_indices if i == 0 else row_indices,
+            column_indices,
+            first_page_first_row_col_indices if i == 0 else column_indices,
+            first_page_last_row_col_indices if i == 0 else column_indices,
+            spec,
+            needs_page_break,
+            is_last_page=is_last,
+        )
+
+        if final_doc is None:
+            final_doc = formatted_page
+        else:
+            final_doc = combine_docs(final_doc, formatted_page)
+
+    return final_doc
+
 
 def main(
     spec: LabelSpec, input_file_path=None, output_file_path=None, text_box_input=None
@@ -72,24 +119,25 @@ def main(
         first_page_row_indices = get_first_page_row_indices(
             start_row, end_row, row_indices
         )
-        print(start_row)
-        print(end_row)
-        print(row_indices)
         first_page_first_row_col_indices, first_page_last_row_col_indices = (
             get_first_page_col_indices(
                 start_col, end_col, start_row, end_row, column_indices
             )
         )
-        print(first_page_first_row_col_indices, first_page_last_row_col_indices)
     else:
         first_page_row_indices = row_indices
         first_page_first_row_col_indices = column_indices
         first_page_last_row_col_indices = column_indices
 
-    multi_pages = False
     final_doc = None
 
-
+    max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
+    first_page_max_labels = get_max_labels_first_page(
+        first_page_row_indices,
+        column_indices,
+        first_page_first_row_col_indices,
+        first_page_last_row_col_indices,
+    )
 
     if spec.presettype == "File":
         # Load data from file based on extension
@@ -101,104 +149,60 @@ def main(
             raise ValueError(
                 "Unsupported file type. Please upload a .csv or .xlsx file."
             )
-        
+
         if spec.remove_duplicates == True:
             data_list = remove_duplicate_labels(data_list)
 
-
-        max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
-
-        first_page_max_labels = get_max_labels_first_page(
+        final_doc = _build_document(
+            data_list,
+            spec.copiesperlabel,
+            first_page_max_labels,
+            max_labels_per_page,
+            templatepath,
             first_page_row_indices,
+            row_indices,
             column_indices,
             first_page_first_row_col_indices,
-            first_page_last_row_col_indices
+            first_page_last_row_col_indices,
+            spec,
+            needs_page_break,
         )
-        first_page, otherpages = paginate_labels(
-            first_page_max_labels, max_labels_per_page, data_list, spec.copiesperlabel
-        )
-        pages = [first_page]
-        pages = pages + otherpages
-
-        for i, page in enumerate(pages):
-            is_last = (i == len(pages) - 1)
-            formatted_page = format_labels_page(
-                page,
-                templatepath,
-                first_page_row_indices if i == 0 else row_indices,
-                column_indices,
-                first_page_first_row_col_indices if i == 0 else column_indices,
-                first_page_last_row_col_indices if i == 0 else column_indices,
-                spec,
-                needs_page_break,
-                is_last_page=is_last
-            )
-
-            if final_doc is None:
-                final_doc = formatted_page
-            else:
-                final_doc = combine_docs(final_doc, formatted_page)
-
-        save_file(output_file_path, final_doc)
-        return
 
     elif spec.presettype == "Text":
         logic = spec.identical_or_incremental
 
         if logic == "Identical":
-            labeltext = text_box_input
-
             try:
                 count = int(spec.copiesperlabel)
             except (TypeError, ValueError):
                 # Fill the page if copiesperlabel is blank or invalid
-                count = get_max_labels_first_page(
-                    first_page_row_indices,
-                    column_indices,
-                    first_page_first_row_col_indices,
-                    first_page_last_row_col_indices
-                )
+                count = first_page_max_labels
 
+            data_list = [text_box_input] * count
 
-            data_list = [labeltext] * count
-  
-            first_page_max_labels = get_max_labels_first_page(
+            final_doc = _build_document(
+                data_list,
+                1,
+                first_page_max_labels,
+                max_labels_per_page,
+                templatepath,
                 first_page_row_indices,
+                row_indices,
                 column_indices,
                 first_page_first_row_col_indices,
                 first_page_last_row_col_indices,
+                spec,
+                needs_page_break,
             )
-            max_labels_per_page = get_max_labels_per_page(spec, templatepath, table_format)
-            
-            firstpage, otherpages = [*paginate_labels(first_page_max_labels, max_labels_per_page, data_list, 1)]
-            
-            pages = [firstpage]
 
-            pages = pages + otherpages
-
-            for i, page in enumerate(pages):
-                is_last = (i == len(pages) - 1)
-                formatted_page = format_labels_page(
-                    page,
-                    templatepath,
-                    first_page_row_indices if i == 0 else row_indices,
-                    column_indices,
-                    first_page_first_row_col_indices if i == 0 else column_indices,
-                    first_page_last_row_col_indices if i == 0 else column_indices,
-                    spec,
-                    needs_page_break,
-                    is_last_page=is_last
-                )
-                if final_doc is None:
-                    final_doc = formatted_page
-                else:
-                    final_doc = combine_docs(final_doc, formatted_page)
-            
         elif logic == "Incremental":
             num_pages = spec.pages_of_labels
             match = re.match(r"([A-Za-z0-9\-_]*?)(\d+)$", text_box_input)
             if not match:
-                return
+                raise ValueError(
+                    f"Could not parse a serial number from '{text_box_input}'. "
+                    "Expected an optional prefix followed by digits (e.g. 'ab-0001')."
+                )
 
             prefix, start_num = match.groups()
             num_digits = len(start_num)
@@ -209,59 +213,41 @@ def main(
             except (TypeError, ValueError):
                 count = 1
 
-            first_page_max_labels = get_max_labels_first_page(
-                first_page_row_indices,
-                column_indices,
-                first_page_first_row_col_indices,
-                first_page_last_row_col_indices,
-            )
-
-            max_labels_per_page = get_max_labels_per_page(
-                spec, templatepath, table_format
-            )
             labelcount_additional_pages = max_labels_per_page * (num_pages - 1)
-
             num_serials = (first_page_max_labels + labelcount_additional_pages) // count
-            data_list = []
+
             label_width = template_meta["label_width"]
             font_size = float(spec.fontsize)
-            
             font_name = "Arial"
             max_chars = estimate_max_chars(label_width, font_size, font_name)
+
+            data_list = []
             for i in range(start, start + num_serials):
                 serial_num = f"{i:0{num_digits}d}"
                 serial = f"{prefix}{serial_num}"
+                label = smart_wrap_label_text(serial, max_chars, prefix)
                 for _ in range(count):
-                    label = smart_wrap_label_text(serial, max_chars, prefix)                 
                     data_list.append([label])
 
-            firstpage, otherpages = paginate_labels(
-                first_page_max_labels, max_labels_per_page, data_list, 1
+            final_doc = _build_document(
+                data_list,
+                1,
+                first_page_max_labels,
+                max_labels_per_page,
+                templatepath,
+                first_page_row_indices,
+                row_indices,
+                column_indices,
+                first_page_first_row_col_indices,
+                first_page_last_row_col_indices,
+                spec,
+                needs_page_break,
             )
 
-            pages = [firstpage]
-
-            pages = pages + otherpages
-
-            for i, page in enumerate(pages):
-                is_last = (i == len(pages) - 1)
-                formatted_page = format_labels_page(
-                    page,
-                    templatepath,
-                    first_page_row_indices if i == 0 else row_indices,
-                    column_indices,
-                    first_page_first_row_col_indices if i == 0 else column_indices,
-                    first_page_last_row_col_indices if i == 0 else column_indices,
-                    spec,
-                    needs_page_break,
-                    is_last_page=is_last
-                )
-
-                if final_doc is None:
-                    final_doc = formatted_page
-                else:
-                    final_doc = combine_docs(final_doc, formatted_page)
-
+        else:
+            raise ValueError(
+                "Invalid identical_or_incremental: must be 'Identical' or 'Incremental'"
+            )
 
     else:
         raise ValueError("Invalid presettype: must be 'Text' or 'File'")
@@ -270,11 +256,6 @@ def main(
 
 
 if __name__ == "__main__":
-    """
-    Entry point of the script when run from the command line. Ensures that the user provides two arguments:
-    the excel sheet location and the quantity of labels.
-    """
-    if len(sys.argv) > 1:
-        main(sys.argv[1])
-    else:
-        print("Please provide 1 argument")
+    # main() requires a LabelSpec, not a raw path, so there's no meaningful way
+    # to drive it from bare command-line arguments. Run gui.py instead.
+    print("Cryo Label Studio is a GUI app. Run 'python gui.py' to launch it.")

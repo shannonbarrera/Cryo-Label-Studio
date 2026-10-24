@@ -1,16 +1,9 @@
-import sys
 import re
-import copy
-from docx.oxml import OxmlElement
-from docx import Document
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.section import WD_SECTION_START
-from datetime import datetime, date
-from label_templates import label_templates
-from docx.oxml.ns import qn
-from docxcompose.composer import Composer
 import math
+from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from datetime import datetime, date
 
 
 
@@ -19,11 +12,12 @@ def get_row_and_column_indices(templatepath, table_format):
     table = labelsheet.tables[0]
     if table_format == "checkerboard":
         row_indices = [i for i in range(len(table.rows)) if i % 2 == 0]
-        col_indices = [j for j in range(len(table.columns)) if j % 2 == 0]
-
-    if table_format == "LSL stripes":
+    elif table_format == "LSL stripes":
         row_indices = [i for i in range(len(table.rows))]
-        col_indices = [j for j in range(len(table.columns)) if j % 2 == 0]
+    else:
+        raise ValueError(f"Unknown table_format: {table_format!r}")
+
+    col_indices = [j for j in range(len(table.columns)) if j % 2 == 0]
 
     return row_indices, col_indices
 
@@ -125,7 +119,7 @@ def paginate_labels(
             first_page_max_data += 1
 
         for item in data_list[:first_page_max_data]:
-            for i in range(copiesperlabel):
+            for _ in range(copiesperlabel):
                 firstpage.append(item)
         if len(firstpage) > first_page_max_labels:
             hangover = firstpage[first_page_max_labels:]
@@ -137,7 +131,7 @@ def paginate_labels(
         pages = []
         remainingindex = 0
         page = []
-        for i in range(1, num_pages):
+        for _ in range(1, num_pages):
             if remainingindex == 0:
                 page = hangover
             remaining_labels_on_page = max_labels_per_page - len(page)
@@ -145,7 +139,7 @@ def paginate_labels(
                 remaining_labels_on_page / copiesperlabel
             )
             for item in remaining[remainingindex:remaining_data_items_on_page]:
-                for i in range(copiesperlabel):
+                for _ in range(copiesperlabel):
                     page.append(item)
                 remainingindex += 1
 
@@ -187,15 +181,19 @@ def format_labels_page(
         middle_rows = []
         last_row = first_page_row_indices[-1]
 
-    labelcount = 0
-    # Fill first row
-    for cind in first_page_first_row_col_indices:
-        if labelcount >= len(data_list):
-            break
-        current_cell = table.rows[first_row].cells[cind]
+    # Build the ordered list of (row, column) cell coordinates to fill:
+    # the first row, then each middle row, then the last row (if distinct).
+    cell_coords = [(first_row, cind) for cind in first_page_first_row_col_indices]
+    for row in middle_rows:
+        cell_coords.extend((row, cind) for cind in column_indices)
+    if last_row != first_row:
+        cell_coords.extend((last_row, cind) for cind in first_page_last_row_col_indices)
+
+    for (row, cind), data in zip(cell_coords, data_list):
+        current_cell = table.rows[row].cells[cind]
         format_label_cell(
             current_cell,
-            data_list[labelcount],
+            data,
             textboxformatinput,
             fontname,
             fontsize,
@@ -203,43 +201,6 @@ def format_labels_page(
             spec.date_format,
             spec.identical_or_incremental,
         )
-        labelcount += 1
-
-    # Fill middle rows
-    for row in middle_rows:
-        for cind in column_indices:
-            if labelcount >= len(data_list):
-                break
-            current_cell = table.rows[row].cells[cind]
-            format_label_cell(
-                current_cell,
-                data_list[labelcount],
-                textboxformatinput,
-                fontname,
-                fontsize,
-                spec.alignment,
-                spec.date_format,
-                spec.identical_or_incremental,
-            )
-            labelcount += 1
-
-    # Fill last row (if it’s different)
-    if last_row != first_row:
-        for cind in first_page_last_row_col_indices:
-            if labelcount >= len(data_list):
-                break
-            current_cell = table.rows[last_row].cells[cind]
-            format_label_cell(
-                current_cell,
-                data_list[labelcount],
-                textboxformatinput,
-                fontname,
-                fontsize,
-                spec.alignment,
-                spec.date_format,
-                spec.identical_or_incremental,
-            )
-            labelcount += 1
 
     if needs_page_break:
         if not is_last_page:
@@ -270,13 +231,8 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
          Doe, John
          03/29/2025"
     """
-    if identical_or_incremental != "Identical":
-        if textboxformatinput:
-            label_text = apply_format_to_row(textboxformatinput, data, date_format)
-            cell.text = label_text
-
-        else:
-            cell.text = data
+    if identical_or_incremental != "Identical" and textboxformatinput:
+        cell.text = apply_format_to_row(textboxformatinput, data, date_format)
     else:
         cell.text = data
 
@@ -296,7 +252,6 @@ def format_label_cell(cell, data, textboxformatinput, fontname, fontsize, alignm
             run.bold = True
     return
 
-import re
 
 def smart_wrap_label_text(label_text, max_chars, prefix=None, buffer=3):
     """
